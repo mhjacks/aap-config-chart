@@ -1,0 +1,9 @@
+{{- $valuesyaml := toYaml $.Values -}} # E: syntax error: expected '<document start>', but found '{'
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: helm-values
+  namespace: aap-config
+data:
+  values.yaml: |
+    {{ tpl $valuesyaml . | nindent 4 }}

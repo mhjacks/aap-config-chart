@@ -1,0 +1,132 @@
+---
+secretStore:
+  name: vault-backend
+  kind: ClusterSecretStore
+
+aapManifest:
+  key: secret/data/hub/aap-manifest
+
+agof:
+  vaultFileKey: secret/data/hub/agof-vault-file
+
+  agof_repo: https://github.com/validatedpatterns/agof.git
+  agof_revision: v2
+
+  iac_repo: https://github.com/validatedpatterns-demos/ansible-edge-gitops-hmi-config-as-code.git
+  iac_revision: main
+
+configJob:
+  image: quay.io/hybridcloudpatterns/imperative-container:v1
+  schedule: "*/10 * * * *"
+  activeDeadlineSeconds: 3600
+  imagePullPolicy: Always
+  configTimeout: 1800
+
+serviceAccountName: aap-config-sa
+serviceAccountNamespace: aap-config
+
+rbac:
+  roles:
+    - name: view-secrets-cms
+      createRole: true
+      apiGroups:
+        - '""'
+      scope:
+        cluster: true
+      resources:
+        - secrets
+        - configmaps
+      verbs:
+        - "get"
+        - "list"
+        - "watch"
+    - name: view-routes
+      createRole: true
+      apiGroups:
+        - route.openshift.io
+      scope:
+        cluster: true
+      resources:
+        - routes
+      verbs:
+        - "get"
+        - "list"
+        - "watch"
+    - name: view-all
+      createRole: true
+      apiGroups:
+        - '"*"'
+      scope:
+        cluster: false
+      resources:
+        - '"*"'
+      verbs:
+        - "get"
+        - "list"
+        - "watch"
+  roleBindings:
+    - name: view-aap-secrets-cms
+      createBinding: true
+      scope:
+        cluster: false
+        namespace: "ansible-automation-platform"
+      subjects:
+        kind: ServiceAccount
+        name: aap-config-sa
+        namespace: aap-config
+        apiGroup: ""
+      roleRef:
+        kind: ClusterRole
+        name: view-secrets-cms
+    - name: view-aap-routes
+      createBinding: true
+      scope:
+        cluster: false
+        namespace: "ansible-automation-platform"
+      subjects:
+        kind: ServiceAccount
+        name: aap-config-sa
+        namespace: aap-config
+        apiGroup: ""
+      roleRef:
+        kind: ClusterRole
+        name: view-routes
+    - name: view-vault-secrets-cms
+      createBinding: true
+      scope:
+        cluster: false
+        namespace: "vault"
+      subjects:
+        kind: ServiceAccount
+        name: aap-config-sa
+        namespace: aap-config
+        apiGroup: ""
+      roleRef:
+        kind: ClusterRole
+        name: view-secrets-cms
+    - name: view-imperative-secrets-cms
+      createBinding: true
+      scope:
+        cluster: false
+        namespace: "imperative"
+      subjects:
+        kind: ServiceAccount
+        name: aap-config-sa
+        namespace: aap-config
+        apiGroup: ""
+      roleRef:
+        kind: ClusterRole
+        name: view-secrets-cms
+    - name: view-all
+      createBinding: true
+      scope:
+        cluster: false
+        namespace: "aap-config"
+      subjects:
+        kind: ServiceAccount
+        name: aap-config-sa
+        namespace: aap-config
+        apiGroup: ""
+      roleRef:
+        kind: Role
+        name: view-all
