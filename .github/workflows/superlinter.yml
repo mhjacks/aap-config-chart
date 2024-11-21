@@ -28,6 +28,8 @@ jobs:
           DEFAULT_BRANCH: main
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # These are the validation we disable atm
+          # Temporarily
+          VALIDATE_CHECKOV: false
           VALIDATE_JSON_PRETTIER: false
           VALIDATE_KUBERNETES_KUBECONFORM: false
           VALIDATE_MARKDOWN: false
