@@ -3,4 +3,4 @@ description: A Helm chart to build and deploy secrets using external-secrets for
 keywords:
 - pattern
 name: aap-config
-version: 0.1.0
+version: 0.1.1
