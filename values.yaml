@@ -8,6 +8,7 @@ aapManifest:
 
 agof:
   vaultFileKey: secret/data/hub/agof-vault-file
+  automationHubTokenKey: secret/data/hub/automation-hub-token
 
   agof_repo: https://github.com/validatedpatterns/agof.git
   agof_revision: v2
