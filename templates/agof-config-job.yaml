@@ -51,6 +51,8 @@ spec:
               env:
                 - name: HOME
                   value: /pattern-home
+                - name: EXTRA_PLAYBOOK_OPTS
+                  value: {{ .Values.agof.extraPlaybookOpts | quote }}
               workingDir: /pattern-home/agof_repo
               command:
                 - timeout

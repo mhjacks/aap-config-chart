@@ -1,6 +1,6 @@
 # aap-config
 
-![Version: 0.1.1](https://img.shields.io/badge/Version-0.1.1-informational?style=flat-square)
+![Version: 0.1.2](https://img.shields.io/badge/Version-0.1.2-informational?style=flat-square)
 
 A Helm chart to build and deploy secrets using external-secrets for ansible-edge-gitops
 
@@ -14,6 +14,7 @@ This chart is used to set up the Ansible Automation Platform Operator version 2.
 | agof.agof_repo | string | `"https://github.com/validatedpatterns/agof.git"` |  |
 | agof.agof_revision | string | `"v2"` |  |
 | agof.automationHubTokenKey | string | `"secret/data/hub/automation-hub-token"` |  |
+| agof.extraPlaybookOpts | string | `""` |  |
 | agof.iac_repo | string | `"https://github.com/validatedpatterns-demos/ansible-edge-gitops-hmi-config-as-code.git"` |  |
 | agof.iac_revision | string | `"main"` |  |
 | agof.vaultFileKey | string | `"secret/data/hub/agof-vault-file"` |  |
