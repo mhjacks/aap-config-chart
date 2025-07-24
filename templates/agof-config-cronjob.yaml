@@ -3,7 +3,7 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: agof-config-job
+  name: agof-config-cronjob
   annotations:
     argocd.argoproj.io/sync-wave: "5"
 spec:
@@ -12,6 +12,8 @@ spec:
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:
-      activeDeadlineSeconds: {{ $.Values.configJob.activeDeadlineSeconds }}
-      {{- include "aap-config.app.configjobspec" $ | nindent 6 }}
+      template:
+        spec:
+          activeDeadlineSeconds: {{ $.Values.configJob.activeDeadlineSeconds }}
+          {{- include "aap-config.app.configjobspec" $ | nindent 10 }}
 {{- end }}{{/* if not $.Values.configJob.disabled */}}
