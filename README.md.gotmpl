@@ -13,7 +13,9 @@ This chart is used to set up the Ansible Automation Platform Operator version 2.
 -v options (usually -vvv) to be passed to playbook to help debug it
 
 * v0.1.3: Introduce "bootstrap" phase; this means that the config job will run until
-it succeeds, and only then proceed to create the cronjob to re-configure.
+it succeeds, and only then proceed to create the cronjob to re-configure. It also
+means the cronjob scheduling is nowehere near as aggressive (every even hour at
+the 10-minute mark instead of every ten minutes as previously).
 
 {{ template "chart.homepageLine" . }}
 
