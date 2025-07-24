@@ -3,6 +3,7 @@ metadata:
   name: aap-config-job
 spec:
   serviceAccountName: {{ $.Values.serviceAccountName }}
+  restartPolicy: Never
   volumes:
     - name: agof-scratch-space
       emptyDir:
@@ -50,5 +51,4 @@ spec:
           mountPath: /pattern-home
         - name: agof-vault-file
           mountPath: /pattern-home/agof-vault-file
-  restartPolicy: Never
 {{- end }} {{/* aap-config.app.configjobspec */}}
