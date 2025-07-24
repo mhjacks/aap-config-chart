@@ -1,9 +1,9 @@
 {{- define "aap-config.app.configjobspec" -}}
+restartPolicy: Never
 metadata:
   name: aap-config-job
 spec:
   serviceAccountName: {{ $.Values.serviceAccountName }}
-  restartPolicy: Never
   volumes:
     - name: agof-scratch-space
       emptyDir:
