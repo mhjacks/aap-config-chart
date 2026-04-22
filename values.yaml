@@ -5,9 +5,11 @@ secretStore:
 
 aapManifest:
   key: secret/data/hub/aap-manifest
+  enabled: true
 
 agof:
   vaultFileKey: secret/data/hub/agof-vault-file
+  vaultFileEnabled: true
   automationHubTokenKey: secret/data/hub/automation-hub-token
   extraPlaybookOpts: ''
 
@@ -31,6 +33,8 @@ serviceAccountNamespace: aap-config
 validationJob:
   disabled: false
   activeDeadlineSeconds: 3600
+  # Namespace to list ExternalSecrets from (unset = Helm release namespace)
+  externalSecretsNamespace: ""
 
 # RBAC configuration using vp-rbac subchart
 vp-rbac:
