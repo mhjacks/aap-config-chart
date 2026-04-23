@@ -4,8 +4,20 @@ secretStore:
   kind: ClusterSecretStore
 
 aapManifest:
+  # How the AAP manifest reaches the config job pod (always mounted).
+  # - sscsi: Secrets Store CSI volume (default)
+  # - externalSecret: native Secret volume (chart-managed ExternalSecret and/or your own Secret)
+  source: sscsi
   key: secret/data/hub/aap-manifest
-  enabled: true
+  # When source is externalSecret, set false if you already manage ExternalSecret/Secret elsewhere.
+  createExternalSecret: true
+  sscsi:
+    driver: secrets-store.csi.k8s.io
+    secretProviderClass: aap-manifest
+    mountPath: /pattern-home/aap-manifest
+  externalSecret:
+    secretName: aap-manifest
+    mountPath: /pattern-home/aap-manifest
 
 agof:
   vaultFileKey: secret/data/hub/agof-vault-file

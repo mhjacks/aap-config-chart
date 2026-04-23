@@ -1,4 +1,8 @@
 {{- define "aap-config.app.configjobspec" -}}
+{{- $m := $.Values.aapManifest -}}
+{{- if and (ne $m.source "sscsi") (ne $m.source "externalSecret") }}
+{{- fail "aapManifest.source must be \"sscsi\" or \"externalSecret\"" }}
+{{- end }}
 restartPolicy: Never
 serviceAccountName: {{ $.Values.serviceAccountName }}
 volumes:
@@ -8,6 +12,18 @@ volumes:
   - name: agof-vault-file
     secret:
       secretName: agof-vault-file
+{{- if eq $m.source "sscsi" }}
+  - name: aap-manifest
+    csi:
+      driver: {{ $m.sscsi.driver | quote }}
+      readOnly: true
+      volumeAttributes:
+        secretProviderClass: {{ required "aapManifest.sscsi.secretProviderClass is required when aapManifest.source is sscsi" $m.sscsi.secretProviderClass | quote }}
+{{- else }}
+  - name: aap-manifest
+    secret:
+      secretName: {{ required "aapManifest.externalSecret.secretName is required when aapManifest.source is externalSecret" $m.externalSecret.secretName | quote }}
+{{- end }}
 initContainers:
   - name: agof-init
     image: {{ .Values.configJob.image }}
@@ -48,4 +64,7 @@ containers:
         mountPath: /pattern-home
       - name: agof-vault-file
         mountPath: /pattern-home/agof-vault-file
+      - name: aap-manifest
+        mountPath: {{ ternary $m.sscsi.mountPath $m.externalSecret.mountPath (eq $m.source "sscsi") | quote }}
+        readOnly: true
 {{- end }} {{/* aap-config.app.configjobspec */}}

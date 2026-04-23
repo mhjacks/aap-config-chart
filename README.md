@@ -27,6 +27,9 @@ namespaces from external secrets validation.
 To use this version, you will also need to update your pattern to use the
 `openshift-external-secrets-operator` and `openshift-external-secrets` helm chart.
 
+* v0.3.0: Allow for the creation of aap-manifest via SSCSI (which is now default)
+or the classic ESO behavior.
+
 ## Requirements
 
 | Repository | Name | Version |
@@ -37,13 +40,21 @@ To use this version, you will also need to update your pattern to use the
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
+| aapManifest.createExternalSecret | bool | `true` |  |
+| aapManifest.externalSecret.mountPath | string | `"/pattern-home/aap-manifest"` |  |
+| aapManifest.externalSecret.secretName | string | `"aap-manifest"` |  |
 | aapManifest.key | string | `"secret/data/hub/aap-manifest"` |  |
+| aapManifest.source | string | `"sscsi"` |  |
+| aapManifest.sscsi.driver | string | `"secrets-store.csi.k8s.io"` |  |
+| aapManifest.sscsi.mountPath | string | `"/pattern-home/aap-manifest"` |  |
+| aapManifest.sscsi.secretProviderClass | string | `"aap-manifest"` |  |
 | agof.agof_repo | string | `"https://github.com/validatedpatterns/agof.git"` |  |
 | agof.agof_revision | string | `"v2"` |  |
 | agof.automationHubTokenKey | string | `"secret/data/hub/automation-hub-token"` |  |
 | agof.extraPlaybookOpts | string | `""` |  |
 | agof.iac_repo | string | `"https://github.com/validatedpatterns-demos/ansible-edge-gitops-hmi-config-as-code.git"` |  |
 | agof.iac_revision | string | `"main"` |  |
+| agof.vaultFileEnabled | bool | `true` |  |
 | agof.vaultFileKey | string | `"secret/data/hub/agof-vault-file"` |  |
 | configJob.activeDeadlineSeconds | int | `3600` |  |
 | configJob.configTimeout | int | `1800` |  |
@@ -56,6 +67,7 @@ To use this version, you will also need to update your pattern to use the
 | serviceAccountNamespace | string | `"aap-config"` |  |
 | validationJob.activeDeadlineSeconds | int | `3600` |  |
 | validationJob.disabled | bool | `false` |  |
+| validationJob.externalSecretsNamespace | string | `""` |  |
 | vp-rbac.clusterRoles.view-routes.rules[0].apiGroups[0] | string | `"route.openshift.io"` |  |
 | vp-rbac.clusterRoles.view-routes.rules[0].resources[0] | string | `"routes"` |  |
 | vp-rbac.clusterRoles.view-routes.rules[0].verbs[0] | string | `"get"` |  |
