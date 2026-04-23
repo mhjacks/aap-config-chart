@@ -40,7 +40,7 @@ or the classic ESO behavior.
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| aapManifest.createExternalSecret | bool | `true` |  |
+| aapManifest.createExternalSecret | bool | `false` |  |
 | aapManifest.externalSecret.mountPath | string | `"/pattern-home/aap-manifest"` |  |
 | aapManifest.externalSecret.secretName | string | `"aap-manifest"` |  |
 | aapManifest.key | string | `"secret/data/hub/aap-manifest"` |  |
@@ -54,7 +54,7 @@ or the classic ESO behavior.
 | agof.extraPlaybookOpts | string | `""` |  |
 | agof.iac_repo | string | `"https://github.com/validatedpatterns-demos/ansible-edge-gitops-hmi-config-as-code.git"` |  |
 | agof.iac_revision | string | `"main"` |  |
-| agof.vaultFileEnabled | bool | `true` |  |
+| agof.vaultFileEnabled | bool | `false` |  |
 | agof.vaultFileKey | string | `"secret/data/hub/agof-vault-file"` |  |
 | configJob.activeDeadlineSeconds | int | `3600` |  |
 | configJob.configTimeout | int | `1800` |  |

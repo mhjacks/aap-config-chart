@@ -10,7 +10,7 @@ aapManifest:
   source: sscsi
   key: secret/data/hub/aap-manifest
   # When source is externalSecret, set false if you already manage ExternalSecret/Secret elsewhere.
-  createExternalSecret: true
+  createExternalSecret: false
   sscsi:
     driver: secrets-store.csi.k8s.io
     secretProviderClass: aap-manifest
@@ -21,7 +21,7 @@ aapManifest:
 
 agof:
   vaultFileKey: secret/data/hub/agof-vault-file
-  vaultFileEnabled: true
+  vaultFileEnabled: false
   automationHubTokenKey: secret/data/hub/automation-hub-token
   extraPlaybookOpts: ''
 
