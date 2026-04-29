@@ -2,9 +2,41 @@
 {{- if and $.Values.aapManifest.csi $.Values.aapManifest.csi.enabled }}true{{- else -}}false{{- end -}}
 {{- end }}
 
+{{/*
+csiWorkloadIdentity: single source for CSI workload SA/namespace and Vault Kubernetes auth role name.
+Slug matches rhvp.cluster_utils when vault_ss_csi_role_slug_mode is stable_slug (ns-sa-appKey).
+If vaultKubernetesAuthRole is set, it is used as the full Vault role name (e.g. hub-sscsi-<sha1> for hash mode).
+*/}}
+{{- define "aap-config.csiWorkloadIdentityEnabled" -}}
+{{- $id := $.Values.csiWorkloadIdentity | default dict -}}
+{{- if and $id (eq true (default false $id.enabled)) }}true{{- else -}}false{{- end -}}
+{{- end }}
+
+{{- define "aap-config.effectiveServiceAccountName" -}}
+{{- if eq (include "aap-config.csiWorkloadIdentityEnabled" $) "true" -}}
+{{- required "csiWorkloadIdentity.serviceAccount is required when csiWorkloadIdentity.enabled" $.Values.csiWorkloadIdentity.serviceAccount -}}
+{{- else -}}
+{{- $.Values.serviceAccountName -}}
+{{- end -}}
+{{- end }}
+
+{{- define "aap-config.effectiveServiceAccountNamespace" -}}
+{{- if eq (include "aap-config.csiWorkloadIdentityEnabled" $) "true" -}}
+{{- required "csiWorkloadIdentity.namespace is required when csiWorkloadIdentity.enabled" $.Values.csiWorkloadIdentity.namespace -}}
+{{- else -}}
+{{- $.Values.serviceAccountNamespace -}}
+{{- end -}}
+{{- end }}
+
+{{/* Stable slug segment: lowercase alphanumerics joined by single hyphens (Ansible stable_slug). */}}
+{{- define "aap-config.vaultSscsiSlug" -}}
+{{- $s := printf "%s-%s-%s" .ns .sa .app | lower | regexReplaceAll "[^a-z0-9]+" "-" | regexReplaceAll "-+" "-" | trimAll "-" -}}
+{{- $s -}}
+{{- end }}
+
 {{- define "aap-config.app.configjobspec" -}}
 restartPolicy: Never
-serviceAccountName: {{ $.Values.serviceAccountName }}
+serviceAccountName: {{ include "aap-config.effectiveServiceAccountName" $ }}
 volumes:
   - name: agof-scratch-space
     emptyDir:

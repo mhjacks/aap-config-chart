@@ -54,6 +54,21 @@ configJob:
 serviceAccountName: aap-config-sa
 serviceAccountNamespace: aap-config
 
+# Single block for Vault CSI workload identity (SA, namespace, Vault Kubernetes auth role).
+# When enabled, templates merge rbac.rolename + serviceAccount into openshift-sscsi-vault and
+# drive workload pods' serviceAccountName from the same fields.
+csiWorkloadIdentity:
+  enabled: false
+  serviceAccount: ""
+  namespace: ""
+  vaultAuthMount: hub
+  appKey: aap-config
+  # If set, used as the full Vault role name for SecretProviderClass (e.g. hub-sscsi-<sha1> when
+  # rhvp.cluster_utils uses hash mode). If empty, role is {{ vaultAuthMount }}-sscsi-<stable slug>
+  # matching vault_ss_csi_role_slug_mode: stable_slug in rhvp.cluster_utils.
+  vaultKubernetesAuthRole: ""
+  vaultSkipTLSVerify: ""
+
 # Used only when aapManifest.csi.enabled (openshift-sscsi-vault subchart). Same value shape as
 # openshift-sscsi-vault-chart (ocpSecretsStoreCsiVault + clusterGroup for hub/spoke auth).
 # clusterGroup here merges with the parent chart clusterGroup; applications maps are merged so
