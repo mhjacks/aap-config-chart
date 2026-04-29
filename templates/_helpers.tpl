@@ -1,3 +1,7 @@
+{{- define "aap-config.manifestCsiEnabled" -}}
+{{- if and $.Values.aapManifest.csi $.Values.aapManifest.csi.enabled }}true{{- else -}}false{{- end -}}
+{{- end }}
+
 {{- define "aap-config.app.configjobspec" -}}
 restartPolicy: Never
 serviceAccountName: {{ $.Values.serviceAccountName }}
@@ -14,6 +18,14 @@ volumes:
   - name: agof-git-auth
     secret:
       secretName: {{ $.Values.agof.gitAuthSecret | quote }}
+{{- end }}
+{{- if eq (include "aap-config.manifestCsiEnabled" $) "true" }}
+  - name: aap-manifest-csi
+    csi:
+      driver: secrets-store.csi.k8s.io
+      readOnly: true
+      volumeAttributes:
+        secretProviderClass: {{ $.Values.aapManifest.csi.secretProviderClassName | quote }}
 {{- end }}
 initContainers:
   - name: agof-init
@@ -35,6 +47,16 @@ initContainers:
           base64 -d /pattern-home/agof-vault-file/agof-vault-file > ~/agof_vault.yml
 {{- else }}
           printf '%s\n' '{}' > ~/agof_vault.yml
+{{- end }}
+{{- if eq (include "aap-config.manifestCsiEnabled" $) "true" }}
+          CSI={{ $.Values.aapManifest.csi.mountPath | quote }}
+          OBJ={{ $.Values.aapManifest.csi.objectName | quote }}
+          if [[ -f "$CSI/$OBJ" ]]; then
+            base64 -d "$CSI/$OBJ" > /pattern-home/aap-manifest.decoded
+          else
+            echo "AAP manifest CSI file missing: $CSI/$OBJ" >&2
+            exit 1
+          fi
 {{- end }}
 {{- if $.Values.agof.gitAuthSecret }}
           GIT_AUTH_DIR=/pattern-home/git-auth
@@ -145,6 +167,11 @@ initContainers:
         mountPath: /pattern-home/git-auth
         readOnly: true
 {{- end }}
+{{- if eq (include "aap-config.manifestCsiEnabled" $) "true" }}
+      - name: aap-manifest-csi
+        mountPath: {{ $.Values.aapManifest.csi.mountPath | quote }}
+        readOnly: true
+{{- end }}
 containers:
   - name: agof-config
     image: {{ .Values.configJob.image }}
@@ -166,5 +193,10 @@ containers:
 {{- if $.Values.agof.vaultFileKey }}
       - name: agof-vault-file
         mountPath: /pattern-home/agof-vault-file
+{{- end }}
+{{- if eq (include "aap-config.manifestCsiEnabled" $) "true" }}
+      - name: aap-manifest-csi
+        mountPath: {{ $.Values.aapManifest.csi.mountPath | quote }}
+        readOnly: true
 {{- end }}
 {{- end }} {{/* aap-config.app.configjobspec */}}

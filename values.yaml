@@ -5,6 +5,14 @@ secretStore:
 
 aapManifest:
   key: secret/data/hub/aap-manifest
+  # When enabled: no ExternalSecret for aap-manifest; Vault CSI mounts the manifest instead.
+  # Requires openshift-sscsi-vault dependency, global/clusterGroup values for the SPC, and Vault
+  # Kubernetes auth bound to serviceAccountName in this namespace.
+  csi:
+    enabled: false
+    mountPath: /pattern-home/aap-manifest
+    objectName: b64content
+    secretProviderClassName: aap-manifest-vault
 
 agof:
   doAutoHubVaultConfig: true
@@ -45,6 +53,35 @@ configJob:
 
 serviceAccountName: aap-config-sa
 serviceAccountNamespace: aap-config
+
+# Used only when aapManifest.csi.enabled (openshift-sscsi-vault subchart). Keep objects[].secretPath
+# aligned with aapManifest.key unless you intentionally split paths.
+openshift-sscsi-vault:
+  ocpSecretsStoreCsiVault:
+    secretProviderClass:
+      installDefaultManifests: false
+      enabled: true
+      name: aap-manifest-vault
+    rbac:
+      rolename: hub-role
+      serviceAccount:
+        create: false
+        name: aap-config-sa
+        namespace: aap-config
+    objects:
+      - objectName: b64content
+        secretPath: secret/data/hub/aap-manifest
+        secretKey: b64content
+    vault:
+      hubMountPath: hub
+    tls:
+      vaultSkipTLSVerify: "false"
+global:
+  hubClusterDomain: hub.example.com
+  clusterDomain: foo.example.com
+  localClusterDomain: ""
+clusterGroup:
+  applications: {}
 
 # Validation job configuration
 validationJob:

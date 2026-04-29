@@ -1,0 +1,9 @@
+{{- if eq (include "aap-config.manifestCsiEnabled" .) "true" }}
+{{- $sc := index .Subcharts "openshift-sscsi-vault" }}
+{{- if not $sc }}
+{{- fail "aapManifest.csi.enabled requires the openshift-sscsi-vault chart dependency (run helm dependency update)." }}
+{{- end }}
+{{- include "openshift_sscsi_vault.secretproviderclass" $sc }}
+---
+{{- include "openshift_sscsi_vault.workload_rbac" $sc }}
+{{- end }}

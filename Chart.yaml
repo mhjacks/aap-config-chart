@@ -5,8 +5,12 @@ home: https://github.com/validatedpatterns/aap-config-chart.git
 keywords:
 - pattern
 name: aap-config
-version: 0.2.2
+version: 0.2.3
 dependencies:
 - name: vp-rbac
   version: '0.1.*'
   repository: https://charts.validatedpatterns.io
+- name: openshift-sscsi-vault
+  version: '0.0.*'
+  repository: https://charts.validatedpatterns.io
+  condition: aapManifest.csi.enabled
