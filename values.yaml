@@ -54,9 +54,13 @@ configJob:
 serviceAccountName: aap-config-sa
 serviceAccountNamespace: aap-config
 
-# Used only when aapManifest.csi.enabled (openshift-sscsi-vault subchart). Keep objects[].secretPath
-# aligned with aapManifest.key unless you intentionally split paths.
+# Used only when aapManifest.csi.enabled (openshift-sscsi-vault subchart). Same value shape as
+# openshift-sscsi-vault-chart (ocpSecretsStoreCsiVault + clusterGroup for hub/spoke auth).
+# clusterGroup here merges with the parent chart clusterGroup; applications maps are merged so
+# pattern-level hashicorp-vault entries apply without duplicating them under this key.
 openshift-sscsi-vault:
+  clusterGroup:
+    applications: {}
   ocpSecretsStoreCsiVault:
     secretProviderClass:
       installDefaultManifests: false
@@ -72,10 +76,14 @@ openshift-sscsi-vault:
       - objectName: b64content
         secretPath: secret/data/hub/aap-manifest
         secretKey: b64content
+    secretObjects: []
     vault:
+      externalAddress: ""
       hubMountPath: hub
     tls:
       vaultSkipTLSVerify: "false"
+      vaultCACertPath: ""
+      vaultTLSServerName: ""
 global:
   hubClusterDomain: hub.example.com
   clusterDomain: foo.example.com

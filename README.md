@@ -1,6 +1,6 @@
 # aap-config
 
-![Version: 0.2.2](https://img.shields.io/badge/Version-0.2.2-informational?style=flat-square)
+![Version: 0.2.3](https://img.shields.io/badge/Version-0.2.3-informational?style=flat-square)
 
 A Helm chart to build and deploy secrets using external-secrets for ansible-edge-gitops
 
@@ -81,12 +81,17 @@ secrets:
 
 | Repository | Name | Version |
 |------------|------|---------|
+| https://charts.validatedpatterns.io | openshift-sscsi-vault | 0.0.* |
 | https://charts.validatedpatterns.io | vp-rbac | 0.1.* |
 
 ## Values
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
+| aapManifest.csi.enabled | bool | `false` |  |
+| aapManifest.csi.mountPath | string | `"/pattern-home/aap-manifest"` |  |
+| aapManifest.csi.objectName | string | `"b64content"` |  |
+| aapManifest.csi.secretProviderClassName | string | `"aap-manifest-vault"` |  |
 | aapManifest.key | string | `"secret/data/hub/aap-manifest"` |  |
 | agof.agof_repo | string | `"https://github.com/validatedpatterns/agof.git"` |  |
 | agof.agof_revision | string | `"v2"` |  |
@@ -99,11 +104,32 @@ secrets:
 | agof.iac_repo | string | `"https://github.com/validatedpatterns-demos/ansible-edge-gitops-hmi-config-as-code.git"` |  |
 | agof.iac_revision | string | `"main"` |  |
 | agof.vaultFileKey | string | `""` |  |
+| clusterGroup.applications | object | `{}` |  |
 | configJob.activeDeadlineSeconds | int | `3600` |  |
 | configJob.configTimeout | int | `1800` |  |
 | configJob.image | string | `"quay.io/hybridcloudpatterns/imperative-container:v1"` |  |
 | configJob.imagePullPolicy | string | `"Always"` |  |
 | configJob.schedule | string | `"10 */2 * * *"` |  |
+| global.clusterDomain | string | `"foo.example.com"` |  |
+| global.hubClusterDomain | string | `"hub.example.com"` |  |
+| global.localClusterDomain | string | `""` |  |
+| openshift-sscsi-vault.clusterGroup.applications | object | `{}` |  |
+| openshift-sscsi-vault.ocpSecretsStoreCsiVault.objects[0].objectName | string | `"b64content"` |  |
+| openshift-sscsi-vault.ocpSecretsStoreCsiVault.objects[0].secretKey | string | `"b64content"` |  |
+| openshift-sscsi-vault.ocpSecretsStoreCsiVault.objects[0].secretPath | string | `"secret/data/hub/aap-manifest"` |  |
+| openshift-sscsi-vault.ocpSecretsStoreCsiVault.rbac.rolename | string | `"hub-role"` |  |
+| openshift-sscsi-vault.ocpSecretsStoreCsiVault.rbac.serviceAccount.create | bool | `false` |  |
+| openshift-sscsi-vault.ocpSecretsStoreCsiVault.rbac.serviceAccount.name | string | `"aap-config-sa"` |  |
+| openshift-sscsi-vault.ocpSecretsStoreCsiVault.rbac.serviceAccount.namespace | string | `"aap-config"` |  |
+| openshift-sscsi-vault.ocpSecretsStoreCsiVault.secretObjects | list | `[]` |  |
+| openshift-sscsi-vault.ocpSecretsStoreCsiVault.secretProviderClass.enabled | bool | `true` |  |
+| openshift-sscsi-vault.ocpSecretsStoreCsiVault.secretProviderClass.installDefaultManifests | bool | `false` |  |
+| openshift-sscsi-vault.ocpSecretsStoreCsiVault.secretProviderClass.name | string | `"aap-manifest-vault"` |  |
+| openshift-sscsi-vault.ocpSecretsStoreCsiVault.tls.vaultCACertPath | string | `""` |  |
+| openshift-sscsi-vault.ocpSecretsStoreCsiVault.tls.vaultSkipTLSVerify | string | `"false"` |  |
+| openshift-sscsi-vault.ocpSecretsStoreCsiVault.tls.vaultTLSServerName | string | `""` |  |
+| openshift-sscsi-vault.ocpSecretsStoreCsiVault.vault.externalAddress | string | `""` |  |
+| openshift-sscsi-vault.ocpSecretsStoreCsiVault.vault.hubMountPath | string | `"hub"` |  |
 | secretStore.kind | string | `"ClusterSecretStore"` |  |
 | secretStore.name | string | `"vault-backend"` |  |
 | serviceAccountName | string | `"aap-config-sa"` |  |

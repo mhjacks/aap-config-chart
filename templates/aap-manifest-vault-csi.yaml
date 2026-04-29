@@ -3,7 +3,15 @@
 {{- if not $sc }}
 {{- fail "aapManifest.csi.enabled requires the openshift-sscsi-vault chart dependency (run helm dependency update)." }}
 {{- end }}
-{{- include "openshift_sscsi_vault.secretproviderclass" $sc }}
+{{- $scg := default dict $sc.Values.clusterGroup }}
+{{- $pcg := default dict $.Values.clusterGroup }}
+{{- $cg := mergeOverwrite $scg $pcg }}
+{{- $sapps := default dict $scg.applications }}
+{{- $papps := default dict $pcg.applications }}
+{{- $_ := set $cg "applications" (mergeOverwrite $sapps $papps) }}
+{{- $vaultVals := mergeOverwrite $sc.Values (dict "clusterGroup" $cg) }}
+{{- $vaultCtx := dict "Chart" $sc.Chart "Capabilities" $sc.Capabilities "Release" $sc.Release "Values" $vaultVals }}
+{{- include "openshift_sscsi_vault.secretproviderclass" $vaultCtx }}
 ---
-{{- include "openshift_sscsi_vault.workload_rbac" $sc }}
+{{- include "openshift_sscsi_vault.workload_rbac" $vaultCtx }}
 {{- end }}
