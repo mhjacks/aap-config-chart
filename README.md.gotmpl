@@ -34,6 +34,12 @@ jobs.
 * v0.2.2: Make agof-vault-file optional. Allow for skipping of the local Vault Hub
 instance integration if desired.
 
+* v0.2.10: Optional Vault CSI path for the AAP manifest (`aapManifest.csi` + **`openshift-sscsi-vault`** subchart): SecretProviderClass, workload RBAC, and TLS CA sync aligned with **`openshift-sscsi-vault` 0.0.12+** (`renderSyncCaConfigMap`). For Argo CD, supply CA PEM via **`openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.syncProviderCaConfigMap.pemLiteral`** (**`openshift-sscsi-vault` 0.0.13+**) or manage the ConfigMap out-of-band; do not rely on **`helm lookup()`** under client-side manifest render.
+
+### Vault CSI manifest (`aapManifest.csi`)
+
+When **`aapManifest.csi.enabled`** is true, this chart depends on **`openshift-sscsi-vault`** and renders the Vault CSI SecretProviderClass and related RBAC using named templates from that chart. Set **`csiWorkloadIdentity`** when you want the workload identity fields merged into the SPC. TLS verification against the hub Vault route requires a CA file on the **Vault CSI provider** pod: the subchart can emit a ConfigMap from **`pemLiteral`** (GitOps-safe) or you can mount an existing ConfigMap; the HashiCorp Vault application should **`extraValueFiles`**-merge volumes that mount the same **`configMapName`** at **`syncProviderCaConfigMap.mountDir`** (see aap-starter-kit **`overrides/values-vault-csi-tls-ca.yaml`**).
+
 ### VP-Secrets-v2
 
 ```yaml

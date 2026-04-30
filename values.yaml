@@ -102,14 +102,23 @@ openshift-sscsi-vault:
     caProvider:
       enabled: true
       syncProviderCaConfigMap:
+        # -- Passed through to openshift-sscsi-vault: when true, TLS CA sync and SPC `vaultCACertPath` behavior apply.
         enabled: true
+        # -- Hub Vault route trust bundle (PEM). Required for Argo CD / client-side `helm template` when not using `useLookup`.
         pemLiteral: ""
+        # -- When true, subchart uses helm lookup() (needs API at render time; not for default Argo manifest generation).
         useLookup: false
+        # -- When false, subchart does not create the ConfigMap; supply and mount it yourself on the Vault CSI provider.
         createConfigMap: true
+        # -- Namespace for the TLS CA ConfigMap (typically `vault` where the provider pod runs).
         targetNamespace: vault
+        # -- ConfigMap name; pattern `extraValueFiles` should mount this CM on the Vault CSI DaemonSet.
         configMapName: openshift-sscsi-vault-vault-tls-ca
+        # -- Mount directory on the Vault CSI provider pod for the CA PEM.
         mountDir: /etc/pki/vault-ca
+        # -- ConfigMap data key holding the PEM.
         keyInConfigMap: vault-tls-ca.pem
+        # -- Preset for lookup-based CA resolution only (`auto`, `ingressrouterca`, etc.).
         preset: auto
     tls:
       vaultSkipTLSVerify: "false"
