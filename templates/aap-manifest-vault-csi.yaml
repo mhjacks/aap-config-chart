@@ -48,6 +48,11 @@
 {{- $ociTlsN := mergeOverwrite $ociTls (dict "vaultSkipTLSVerify" $nSkip) }}
 {{- $vaultVals := mergeOverwrite $vaultVals (dict "ocpSecretsStoreCsiVault" (mergeOverwrite $ociVault (dict "tls" $ociTlsN))) }}
 {{- $vaultCtx := dict "Chart" $sc.Chart "Capabilities" $sc.Capabilities "Release" $sc.Release "Values" $vaultVals }}
+{{- $caYaml := include "openshift_sscsi_vault.syncVaultCsiTlsCaConfigMapYaml" $vaultCtx | trim }}
+{{- if $caYaml }}
+{{ $caYaml }}
+---
+{{- end }}
 {{- include "openshift_sscsi_vault.secretproviderclass" $vaultCtx }}
 ---
 {{- include "openshift_sscsi_vault.workload_rbac" $vaultCtx }}

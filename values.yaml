@@ -96,14 +96,18 @@ openshift-sscsi-vault:
     vault:
       externalAddress: ""
       hubMountPath: hub
-    # ESO mounts caProvider objects on the external-secrets controller; the Vault CSI provider is a
-    # different DaemonSet and does not get /etc/pki/vault-ca/... unless you configure it. Keep this
-    # false by default so the SPC omits vaultCACertPath and the provider uses the OS trust store.
-    # Same TLS behavior on hub and spoke; spoke still uses hub vaultAddress and spoke K8s auth mount/role.
-    # If the hub Vault route uses a private CA, set tls.vaultCACertPath (PEM on the CSI provider) or
-    # enable caProvider after mounting trust material on the provider DaemonSet (see subchart docs).
+    # CA for Vault HTTPS: syncProviderCaConfigMap uses helm lookup (like ESO caProvider sources) and
+    # writes a ConfigMap in openshift-cluster-csi-drivers. Mount that CM on the Vault CSI provider
+    # DaemonSet at mountDir (see hashicorp-vault csi.daemonSet extraVolumes) so vaultCACertPath exists.
     caProvider:
-      enabled: false
+      enabled: true
+      syncProviderCaConfigMap:
+        enabled: true
+        targetNamespace: vault
+        configMapName: openshift-sscsi-vault-vault-tls-ca
+        mountDir: /etc/pki/vault-ca
+        keyInConfigMap: vault-tls-ca.pem
+        preset: auto
     tls:
       vaultSkipTLSVerify: "false"
       vaultCACertPath: ""

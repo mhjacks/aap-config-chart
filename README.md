@@ -1,6 +1,6 @@
 # aap-config
 
-![Version: 0.2.6](https://img.shields.io/badge/Version-0.2.6-informational?style=flat-square)
+![Version: 0.2.7](https://img.shields.io/badge/Version-0.2.7-informational?style=flat-square)
 
 A Helm chart to build and deploy secrets using external-secrets for ansible-edge-gitops
 
@@ -120,7 +120,13 @@ secrets:
 | global.hubClusterDomain | string | `"hub.example.com"` |  |
 | global.localClusterDomain | string | `""` |  |
 | openshift-sscsi-vault.clusterGroup.applications | object | `{}` |  |
-| openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.enabled | bool | `false` |  |
+| openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.enabled | bool | `true` |  |
+| openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.syncProviderCaConfigMap.configMapName | string | `"openshift-sscsi-vault-vault-tls-ca"` |  |
+| openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.syncProviderCaConfigMap.enabled | bool | `true` |  |
+| openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.syncProviderCaConfigMap.keyInConfigMap | string | `"vault-tls-ca.pem"` |  |
+| openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.syncProviderCaConfigMap.mountDir | string | `"/etc/pki/vault-ca"` |  |
+| openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.syncProviderCaConfigMap.preset | string | `"auto"` |  |
+| openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.syncProviderCaConfigMap.targetNamespace | string | `"vault"` |  |
 | openshift-sscsi-vault.ocpSecretsStoreCsiVault.objects[0].objectName | string | `"b64content"` |  |
 | openshift-sscsi-vault.ocpSecretsStoreCsiVault.objects[0].secretKey | string | `"b64content"` |  |
 | openshift-sscsi-vault.ocpSecretsStoreCsiVault.objects[0].secretPath | string | `"secret/data/hub/aap-manifest"` |  |
