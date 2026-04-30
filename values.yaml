@@ -67,7 +67,8 @@ csiWorkloadIdentity:
   # rhvp.cluster_utils uses hash mode). If empty, role is {{ vaultAuthMount }}-sscsi-<stable slug>
   # matching vault_ss_csi_role_slug_mode: stable_slug in rhvp.cluster_utils.
   vaultKubernetesAuthRole: ""
-  vaultSkipTLSVerify: ""
+  # When set (non-empty), merged into openshift-sscsi-vault SPC as tls.vaultSkipTLSVerify ("true"/"false").
+  # Leave unset to use subchart default; do not set to "" or the CSI provider may get ParseBool errors.
 
 # Used only when aapManifest.csi.enabled (openshift-sscsi-vault subchart). Same value shape as
 # openshift-sscsi-vault-chart (ocpSecretsStoreCsiVault + clusterGroup for hub/spoke auth).

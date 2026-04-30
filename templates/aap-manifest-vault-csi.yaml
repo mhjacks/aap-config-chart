@@ -23,8 +23,9 @@
 {{- $role := ternary $explicit $computed (ne $explicit "") }}
 {{- $rbac := dict "rolename" $role "serviceAccount" (dict "create" false "name" $sa "namespace" $ns) }}
 {{- $oci := dict "rbac" $rbac }}
-{{- if hasKey $id "vaultSkipTLSVerify" }}
-{{- $_ := set $oci "tls" (dict "vaultSkipTLSVerify" ($id.vaultSkipTLSVerify | toString)) }}
+{{- $skipTls := $id.vaultSkipTLSVerify | default "" | toString | trim }}
+{{- if gt (len $skipTls) 0 }}
+{{- $_ := set $oci "tls" (dict "vaultSkipTLSVerify" $skipTls) }}
 {{- end }}
 {{- $ociPatch = dict "ocpSecretsStoreCsiVault" $oci }}
 {{- end }}
