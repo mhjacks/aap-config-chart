@@ -1,6 +1,6 @@
 # aap-config
 
-![Version: 0.2.3](https://img.shields.io/badge/Version-0.2.3-informational?style=flat-square)
+![Version: 0.2.6](https://img.shields.io/badge/Version-0.2.6-informational?style=flat-square)
 
 A Helm chart to build and deploy secrets using external-secrets for ansible-edge-gitops
 
@@ -110,10 +110,17 @@ secrets:
 | configJob.image | string | `"quay.io/hybridcloudpatterns/imperative-container:v1"` |  |
 | configJob.imagePullPolicy | string | `"Always"` |  |
 | configJob.schedule | string | `"10 */2 * * *"` |  |
+| csiWorkloadIdentity.appKey | string | `"aap-config"` |  |
+| csiWorkloadIdentity.enabled | bool | `false` |  |
+| csiWorkloadIdentity.namespace | string | `""` |  |
+| csiWorkloadIdentity.serviceAccount | string | `""` |  |
+| csiWorkloadIdentity.vaultAuthMount | string | `"hub"` |  |
+| csiWorkloadIdentity.vaultKubernetesAuthRole | string | `""` |  |
 | global.clusterDomain | string | `"foo.example.com"` |  |
 | global.hubClusterDomain | string | `"hub.example.com"` |  |
 | global.localClusterDomain | string | `""` |  |
 | openshift-sscsi-vault.clusterGroup.applications | object | `{}` |  |
+| openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.enabled | bool | `false` |  |
 | openshift-sscsi-vault.ocpSecretsStoreCsiVault.objects[0].objectName | string | `"b64content"` |  |
 | openshift-sscsi-vault.ocpSecretsStoreCsiVault.objects[0].secretKey | string | `"b64content"` |  |
 | openshift-sscsi-vault.ocpSecretsStoreCsiVault.objects[0].secretPath | string | `"secret/data/hub/aap-manifest"` |  |

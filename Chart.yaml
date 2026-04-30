@@ -5,7 +5,7 @@ home: https://github.com/validatedpatterns/aap-config-chart.git
 keywords:
 - pattern
 name: aap-config
-version: 0.2.5
+version: 0.2.6
 dependencies:
 - name: vp-rbac
   version: '0.1.*'
