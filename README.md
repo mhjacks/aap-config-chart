@@ -148,7 +148,7 @@ secrets:
 | openshift-sscsi-vault.ocpSecretsStoreCsiVault.secretProviderClass.installDefaultManifests | bool | `false` |  |
 | openshift-sscsi-vault.ocpSecretsStoreCsiVault.secretProviderClass.name | string | `"aap-manifest-vault"` |  |
 | openshift-sscsi-vault.ocpSecretsStoreCsiVault.tls.vaultCACertPath | string | `""` |  |
-| openshift-sscsi-vault.ocpSecretsStoreCsiVault.tls.vaultSkipTLSVerify | string | `"false"` |  |
+| openshift-sscsi-vault.ocpSecretsStoreCsiVault.tls.vaultSkipTLSVerify | string | `"true"` |  |
 | openshift-sscsi-vault.ocpSecretsStoreCsiVault.tls.vaultTLSServerName | string | `""` |  |
 | openshift-sscsi-vault.ocpSecretsStoreCsiVault.vault.externalAddress | string | `""` |  |
 | openshift-sscsi-vault.ocpSecretsStoreCsiVault.vault.hubMountPath | string | `"hub"` |  |
