@@ -23,10 +23,23 @@
 {{- $role := ternary $explicit $computed (ne $explicit "") }}
 {{- $rbac := dict "rolename" $role "serviceAccount" (dict "create" false "name" $sa "namespace" $ns) }}
 {{- $oci := dict "rbac" $rbac }}
+{{- $baseTls := $sc.Values.ocpSecretsStoreCsiVault.tls | default dict }}
+{{- $pv := index $parentVault "ocpSecretsStoreCsiVault" | default dict }}
+{{- $parentTls := mergeOverwrite (deepCopy $baseTls) (deepCopy ($pv.tls | default dict)) }}
+{{- $tls := deepCopy $parentTls }}
 {{- $skipTls := $id.vaultSkipTLSVerify | default "" | toString | trim }}
 {{- if gt (len $skipTls) 0 }}
-{{- $_ := set $oci "tls" (dict "vaultSkipTLSVerify" $skipTls) }}
+{{- $tls = mergeOverwrite $tls (dict "vaultSkipTLSVerify" $skipTls) }}
 {{- end }}
+{{- $cap := $id.vaultCACertPath | default "" | toString | trim }}
+{{- if gt (len $cap) 0 }}
+{{- $tls = mergeOverwrite $tls (dict "vaultCACertPath" $cap) }}
+{{- end }}
+{{- $vsn := $id.vaultTLSServerName | default "" | toString | trim }}
+{{- if gt (len $vsn) 0 }}
+{{- $tls = mergeOverwrite $tls (dict "vaultTLSServerName" $vsn) }}
+{{- end }}
+{{- $_ := set $oci "tls" $tls }}
 {{- $ociPatch = dict "ocpSecretsStoreCsiVault" $oci }}
 {{- end }}
 {{- $vaultVals := mergeOverwrite $sc.Values $parentVault (dict "clusterGroup" $cg) $ociPatch }}
