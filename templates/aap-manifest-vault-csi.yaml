@@ -48,7 +48,19 @@
 {{- $ociTlsN := mergeOverwrite $ociTls (dict "vaultSkipTLSVerify" $nSkip) }}
 {{- $vaultVals := mergeOverwrite $vaultVals (dict "ocpSecretsStoreCsiVault" (mergeOverwrite $ociVault (dict "tls" $ociTlsN))) }}
 {{- $vaultCtx := dict "Chart" $sc.Chart "Capabilities" $sc.Capabilities "Release" $sc.Release "Values" $vaultVals }}
-{{- $caYaml := include "openshift_sscsi_vault.syncVaultCsiTlsCaConfigMapYaml" $vaultCtx | trim }}
+{{- $pem := trim (include "aap_config.vaultTlsCaPemFromCluster" $vaultCtx) }}
+{{- if ne $pem "" }}
+{{- $ociVault2 := index $vaultVals "ocpSecretsStoreCsiVault" | default dict }}
+{{- $caProv := $ociVault2.caProvider | default dict }}
+{{- $capSync := $caProv.syncProviderCaConfigMap | default dict }}
+{{- $mountDir := $capSync.mountDir | default "/etc/pki/vault-ca" | trim }}
+{{- $keyFile := $capSync.keyInConfigMap | default "vault-tls-ca.pem" | trim }}
+{{- $caPath := printf "%s/%s" $mountDir $keyFile }}
+{{- $ociTls2 := mergeOverwrite ($ociVault2.tls | default dict) (dict "vaultCACertPath" $caPath) }}
+{{- $vaultVals = mergeOverwrite $vaultVals (dict "ocpSecretsStoreCsiVault" (mergeOverwrite $ociVault2 (dict "tls" $ociTls2))) }}
+{{- $vaultCtx = dict "Chart" $sc.Chart "Capabilities" $sc.Capabilities "Release" $sc.Release "Values" $vaultVals }}
+{{- end }}
+{{- $caYaml := include "aap_config.syncVaultCsiTlsCaConfigMapYaml" $vaultCtx | trim }}
 {{- if $caYaml }}
 {{ $caYaml }}
 ---
