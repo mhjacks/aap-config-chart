@@ -3,6 +3,22 @@
 {{- end }}
 
 {{/*
+Normalize tls.vaultSkipTLSVerify to the strings "true" or "false" for Vault CSI (same idea as openshift-sscsi-vault-chart).
+Accepts bool, string, or empty/nil (defaults to false). Do not use sprig "default" with booleans — false is treated as empty.
+*/}}
+{{- define "aap-config.normalizeVaultSkipTLSVerify" -}}
+{{- $v := .v }}
+{{- $asTrue := false }}
+{{- if kindIs "bool" $v }}{{- $asTrue = $v }}
+{{- else if eq ($v | toString | trim | lower) "true" }}{{- $asTrue = true }}
+{{- else if eq ($v | toString) "1" }}{{- $asTrue = true }}
+{{- end }}
+{{- if $asTrue -}}true
+{{- else -}}false
+{{- end -}}
+{{- end }}
+
+{{/*
 csiWorkloadIdentity: single source for CSI workload SA/namespace and Vault Kubernetes auth role name.
 Slug matches rhvp.cluster_utils when vault_ss_csi_role_slug_mode is stable_slug (ns-sa-appKey).
 If vaultKubernetesAuthRole is set, it is used as the full Vault role name (e.g. hub-sscsi-<sha1> for hash mode).

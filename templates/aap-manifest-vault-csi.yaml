@@ -27,9 +27,8 @@
 {{- $pv := index $parentVault "ocpSecretsStoreCsiVault" | default dict }}
 {{- $parentTls := mergeOverwrite (deepCopy $baseTls) (deepCopy ($pv.tls | default dict)) }}
 {{- $tls := deepCopy $parentTls }}
-{{- $skipTls := $id.vaultSkipTLSVerify | default "" | toString | trim }}
-{{- if gt (len $skipTls) 0 }}
-{{- $tls = mergeOverwrite $tls (dict "vaultSkipTLSVerify" $skipTls) }}
+{{- if hasKey $id "vaultSkipTLSVerify" }}
+{{- $tls = mergeOverwrite $tls (dict "vaultSkipTLSVerify" (trim (include "aap-config.normalizeVaultSkipTLSVerify" (dict "v" (index $id "vaultSkipTLSVerify"))))) }}
 {{- end }}
 {{- $cap := $id.vaultCACertPath | default "" | toString | trim }}
 {{- if gt (len $cap) 0 }}
@@ -43,6 +42,11 @@
 {{- $ociPatch = dict "ocpSecretsStoreCsiVault" $oci }}
 {{- end }}
 {{- $vaultVals := mergeOverwrite $sc.Values $parentVault (dict "clusterGroup" $cg) $ociPatch }}
+{{- $ociVault := index $vaultVals "ocpSecretsStoreCsiVault" | default dict }}
+{{- $ociTls := $ociVault.tls | default dict }}
+{{- $nSkip := trim (include "aap-config.normalizeVaultSkipTLSVerify" (dict "v" (index $ociTls "vaultSkipTLSVerify"))) }}
+{{- $ociTlsN := mergeOverwrite $ociTls (dict "vaultSkipTLSVerify" $nSkip) }}
+{{- $vaultVals := mergeOverwrite $vaultVals (dict "ocpSecretsStoreCsiVault" (mergeOverwrite $ociVault (dict "tls" $ociTlsN))) }}
 {{- $vaultCtx := dict "Chart" $sc.Chart "Capabilities" $sc.Capabilities "Release" $sc.Release "Values" $vaultVals }}
 {{- include "openshift_sscsi_vault.secretproviderclass" $vaultCtx }}
 ---
