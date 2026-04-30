@@ -96,13 +96,16 @@ openshift-sscsi-vault:
     vault:
       externalAddress: ""
       hubMountPath: hub
-    # CA for Vault HTTPS: syncProviderCaConfigMap uses helm lookup (like ESO caProvider sources) and
-    # writes a ConfigMap in openshift-cluster-csi-drivers. Mount that CM on the Vault CSI provider
-    # DaemonSet at mountDir (see hashicorp-vault csi.daemonSet extraVolumes) so vaultCACertPath exists.
+    # CA for Vault HTTPS: syncProviderCaConfigMap can render a ConfigMap from pemLiteral (Argo / helm template)
+    # or from useLookup when running helm against the API. Mount the CM on the Vault CSI provider DaemonSet
+    # at mountDir (pattern: vault extraValueFiles) so vaultCACertPath exists on the provider pod.
     caProvider:
       enabled: true
       syncProviderCaConfigMap:
         enabled: true
+        pemLiteral: ""
+        useLookup: false
+        createConfigMap: true
         targetNamespace: vault
         configMapName: openshift-sscsi-vault-vault-tls-ca
         mountDir: /etc/pki/vault-ca
