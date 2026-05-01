@@ -128,7 +128,7 @@ secrets:
 | openshift-sscsi-vault.clusterGroup.applications | object | `{}` |  |
 | openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.enabled | bool | `true` |  |
 | openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.syncProviderCaConfigMap.configMapName | string | `"openshift-sscsi-vault-vault-tls-ca"` | ConfigMap name; pattern `extraValueFiles` should mount this CM on the Vault CSI DaemonSet. |
-| openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.syncProviderCaConfigMap.createConfigMap | bool | `true` | When false, subchart does not create the ConfigMap; supply and mount it yourself on the Vault CSI provider. |
+| openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.syncProviderCaConfigMap.createConfigMap | bool | `false` | false + Ansible-managed CM + vault extraValueFiles: SPC gets vaultCACertPath; true + empty pemLiteral omits it. |
 | openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.syncProviderCaConfigMap.enabled | bool | `true` | Passed through to openshift-sscsi-vault: when true, TLS CA sync and SPC `vaultCACertPath` behavior apply. |
 | openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.syncProviderCaConfigMap.keyInConfigMap | string | `"vault-tls-ca.pem"` | ConfigMap data key holding the PEM. |
 | openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.syncProviderCaConfigMap.mountDir | string | `"/etc/pki/vault-ca"` | Mount directory on the Vault CSI provider pod for the CA PEM. |

@@ -109,7 +109,8 @@ openshift-sscsi-vault:
         # -- When true, subchart uses helm lookup() (needs API at render time; not for default Argo manifest generation).
         useLookup: false
         # -- When false, subchart does not create the ConfigMap; supply and mount it yourself on the Vault CSI provider.
-        createConfigMap: true
+        # -- false + Ansible-managed CM + vault extraValueFiles: SPC gets vaultCACertPath; true + empty pemLiteral omits it.
+        createConfigMap: false
         # -- Namespace for the TLS CA ConfigMap (typically `vault` where the provider pod runs).
         targetNamespace: vault
         # -- ConfigMap name; pattern `extraValueFiles` should mount this CM on the Vault CSI DaemonSet.
