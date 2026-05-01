@@ -120,10 +120,12 @@ openshift-sscsi-vault:
         keyInConfigMap: vault-tls-ca.pem
         # -- Preset for lookup-based CA resolution only (`auto`, `ingressrouterca`, etc.).
         preset: auto
-    # aap-config overrides subchart default (`vaultSkipTLSVerify: "false"` in openshift-sscsi-vault):
-    # skip server TLS verify for the hub Vault route until `pemLiteral` + provider mount are in place.
+    # Align with openshift-sscsi-vault-chart default: verify hub Vault HTTPS when the CA is available
+    # (caProvider + ConfigMap at mountDir/keyInConfigMap on the Vault CSI provider pod; pattern
+    # extraValueFiles + rhvp.cluster_utils, or pemLiteral / useLookup). Set vaultSkipTLSVerify: "true"
+    # only for break-glass without a trust bundle on the provider.
     tls:
-      vaultSkipTLSVerify: "true"
+      vaultSkipTLSVerify: "false"
       vaultCACertPath: ""
       vaultTLSServerName: ""
 global:
