@@ -96,12 +96,13 @@ openshift-sscsi-vault:
     vault:
       externalAddress: ""
       hubMountPath: hub
-    # CA for Vault HTTPS (openshift-sscsi-vault-chart 0.0.15+): default emits a ConfigMap labeled for
-    # CNO inject-trusted-cabundle (merged system + Proxy CA); SPC uses mountDir/trustedCabundleDataKey.
-    # Mount the same configMapName on the Vault CSI DaemonSet (pattern vault extraValueFiles; see
-    # aap-starter-kit overrides/values-vault-csi-tls-ca.yaml). GitOps PEM without injection: set
-    # injectTrustedCabundle false and pemLiteral (or useLookup for cluster-side helm). Legacy Ansible
-    # vault-tls-ca.pem only: injectTrustedCabundle false, createConfigMap false, keyInConfigMap aligned.
+    # CA for Vault HTTPS (openshift-sscsi-vault-chart 0.0.15+ CNO bundle; 0.0.16+ Argo annotation on that CM).
+    # SecretProviderClass stays in the workload namespace (e.g. aap-config); this ConfigMap targets the
+    # namespace where the Vault CSI *provider* DaemonSet runs. Pods can only mount ConfigMaps from their
+    # own namespace, and the process that validates Vault TLS is the provider pod (vault ns), not the Job.
+    # Mount configMapName at mountDir on that DaemonSet (pattern vault extraValueFiles; aap-starter-kit
+    # values-vault-csi-tls-ca.yaml). GitOps PEM: injectTrustedCabundle false + pemLiteral. Legacy Ansible:
+    # injectTrustedCabundle false, createConfigMap false, keyInConfigMap aligned.
     caProvider:
       enabled: true
       syncProviderCaConfigMap:
@@ -111,13 +112,17 @@ openshift-sscsi-vault:
         injectTrustedCabundle: true
         # -- Key written by CNO after injection; used for vaultCACertPath when injectTrustedCabundle is true.
         trustedCabundleDataKey: ca-bundle.crt
+        # -- openshift-sscsi-vault 0.0.16+: annotation so Argo skips drift on CNO-filled data (needs Argo that honors it).
+        argocdIgnoreInjectedTrustedCabundleData: true
+        # -- Extra annotations on the sync TLS ConfigMap (same keys override argocdIgnore* annotation).
+        configMapAnnotations: {}
         # -- Hub Vault route trust bundle (PEM). When set with injectTrustedCabundle false, render PEM ConfigMap (GitOps-safe).
         pemLiteral: ""
         # -- When true, subchart uses helm lookup() (needs API at render time; not for default Argo manifest generation).
         useLookup: false
         # -- When true (default), Helm emits the sync TLS ConfigMap (CNO injection or PEM from pemLiteral/useLookup).
         createConfigMap: true
-        # -- Namespace for the TLS CA ConfigMap (typically `vault` where the provider pod runs).
+        # -- Namespace for the TLS CA ConfigMap: must match the Vault CSI provider pod namespace (not the SPC namespace).
         targetNamespace: vault
         # -- ConfigMap name; pattern `extraValueFiles` should mount this CM on the Vault CSI DaemonSet.
         configMapName: openshift-sscsi-vault-vault-tls-ca
