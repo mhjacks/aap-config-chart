@@ -1,6 +1,6 @@
 # aap-config
 
-![Version: 0.2.10](https://img.shields.io/badge/Version-0.2.10-informational?style=flat-square)
+![Version: 0.2.11](https://img.shields.io/badge/Version-0.2.11-informational?style=flat-square)
 
 A Helm chart to build and deploy secrets using external-secrets for ansible-edge-gitops
 
@@ -35,9 +35,11 @@ instance integration if desired.
 
 * v0.2.10: Optional Vault CSI path for the AAP manifest (`aapManifest.csi` + **`openshift-sscsi-vault`** subchart): SecretProviderClass, workload RBAC, and TLS CA sync aligned with **`openshift-sscsi-vault` 0.0.12+** (`renderSyncCaConfigMap`). For Argo CD, supply CA PEM via **`openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.syncProviderCaConfigMap.pemLiteral`** (**`openshift-sscsi-vault` 0.0.13+**) or manage the ConfigMap out-of-band; do not rely on **`helm lookup()`** under client-side manifest render.
 
+* v0.2.11: Packaged **`openshift-sscsi-vault`** values default to **`injectTrustedCabundle: true`**, **`createConfigMap: true`**, and **`trustedCabundleDataKey: ca-bundle.crt`** (CNO-injected trust bundle, **`openshift-sscsi-vault` 0.0.15+**). Set **`injectTrustedCabundle: false`** and **`pemLiteral`** (or legacy Ansible CM with **`createConfigMap: false`**) when not using cluster injection.
+
 ### Vault CSI manifest (`aapManifest.csi`)
 
-When **`aapManifest.csi.enabled`** is true, this chart depends on **`openshift-sscsi-vault`** and renders the Vault CSI SecretProviderClass and related RBAC using named templates from that chart. Set **`csiWorkloadIdentity`** when you want the workload identity fields merged into the SPC. TLS verification against the hub Vault route requires a CA file on the **Vault CSI provider** pod: the subchart can emit a ConfigMap from **`pemLiteral`** (GitOps-safe) or you can mount an existing ConfigMap; the HashiCorp Vault application should **`extraValueFiles`**-merge volumes that mount the same **`configMapName`** at **`syncProviderCaConfigMap.mountDir`** (see aap-starter-kit **`overrides/values-vault-csi-tls-ca.yaml`**).
+When **`aapManifest.csi.enabled`** is true, this chart depends on **`openshift-sscsi-vault`** and renders the Vault CSI SecretProviderClass and related RBAC using named templates from that chart. Set **`csiWorkloadIdentity`** when you want the workload identity fields merged into the SPC. TLS verification against the hub Vault route requires a CA file on the **Vault CSI provider** pod: by default the subchart emits a CNO **`inject-trusted-cabundle`** ConfigMap (same merged trust as cluster **Proxy**); the HashiCorp Vault application should **`extraValueFiles`**-merge that **`configMapName`** at **`syncProviderCaConfigMap.mountDir`** (see aap-starter-kit **`overrides/values-vault-csi-tls-ca.yaml`**). For GitOps-only PEM without injection, set **`pemLiteral`** and **`injectTrustedCabundle: false`** (or manage the ConfigMap out-of-band).
 
 ### VP-Secrets-v2
 
@@ -128,13 +130,15 @@ secrets:
 | openshift-sscsi-vault.clusterGroup.applications | object | `{}` |  |
 | openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.enabled | bool | `true` |  |
 | openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.syncProviderCaConfigMap.configMapName | string | `"openshift-sscsi-vault-vault-tls-ca"` | ConfigMap name; pattern `extraValueFiles` should mount this CM on the Vault CSI DaemonSet. |
-| openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.syncProviderCaConfigMap.createConfigMap | bool | `false` | false + Ansible-managed CM + vault extraValueFiles: SPC gets vaultCACertPath; true + empty pemLiteral omits it. |
+| openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.syncProviderCaConfigMap.createConfigMap | bool | `true` | When true (default), Helm emits the sync TLS ConfigMap (CNO injection or PEM from pemLiteral/useLookup). |
 | openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.syncProviderCaConfigMap.enabled | bool | `true` | Passed through to openshift-sscsi-vault: when true, TLS CA sync and SPC `vaultCACertPath` behavior apply. |
-| openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.syncProviderCaConfigMap.keyInConfigMap | string | `"vault-tls-ca.pem"` | ConfigMap data key holding the PEM. |
+| openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.syncProviderCaConfigMap.injectTrustedCabundle | bool | `true` | When true with createConfigMap true (default), emit CNO inject-trusted-cabundle ConfigMap; SPC uses trustedCabundleDataKey. |
+| openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.syncProviderCaConfigMap.keyInConfigMap | string | `"vault-tls-ca.pem"` | ConfigMap data key for PEM when not using CNO injection (legacy Ansible key). |
 | openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.syncProviderCaConfigMap.mountDir | string | `"/etc/pki/vault-ca"` | Mount directory on the Vault CSI provider pod for the CA PEM. |
-| openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.syncProviderCaConfigMap.pemLiteral | string | `""` | Hub Vault route trust bundle (PEM). Required for Argo CD / client-side `helm template` when not using `useLookup`. |
+| openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.syncProviderCaConfigMap.pemLiteral | string | `""` | Hub Vault route trust bundle (PEM). When set with injectTrustedCabundle false, render PEM ConfigMap (GitOps-safe). |
 | openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.syncProviderCaConfigMap.preset | string | `"auto"` | Preset for lookup-based CA resolution only (`auto`, `ingressrouterca`, etc.). |
 | openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.syncProviderCaConfigMap.targetNamespace | string | `"vault"` | Namespace for the TLS CA ConfigMap (typically `vault` where the provider pod runs). |
+| openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.syncProviderCaConfigMap.trustedCabundleDataKey | string | `"ca-bundle.crt"` | Key written by CNO after injection; used for vaultCACertPath when injectTrustedCabundle is true. |
 | openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.syncProviderCaConfigMap.useLookup | bool | `false` | When true, subchart uses helm lookup() (needs API at render time; not for default Argo manifest generation). |
 | openshift-sscsi-vault.ocpSecretsStoreCsiVault.objects[0].objectName | string | `"b64content"` |  |
 | openshift-sscsi-vault.ocpSecretsStoreCsiVault.objects[0].secretKey | string | `"b64content"` |  |

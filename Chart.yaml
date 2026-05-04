@@ -5,12 +5,12 @@ home: https://github.com/validatedpatterns/aap-config-chart.git
 keywords:
 - pattern
 name: aap-config
-version: 0.2.10
+version: 0.2.11
 dependencies:
 - name: vp-rbac
   version: '0.1.*'
   repository: https://charts.validatedpatterns.io
-# openshift-sscsi-vault 0.0.12+ adds CA sync named templates; 0.0.13+ adds Argo-safe PEM (`pemLiteral`, `useLookup`, `createConfigMap`). `0.0.*` picks latest once published.
+# openshift-sscsi-vault 0.0.12+ CA sync templates; 0.0.13+ pemLiteral/useLookup; 0.0.15+ default CNO inject-trusted-cabundle. `0.0.*` picks latest once published.
 - name: openshift-sscsi-vault
   version: '0.0.*'
   repository: https://charts.validatedpatterns.io
