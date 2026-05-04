@@ -13,6 +13,7 @@ dependencies:
 # openshift-sscsi-vault: 0.0.12+ CA sync; 0.0.13+ pemLiteral/useLookup; 0.0.15+ CNO inject-trusted-cabundle;
 # 0.0.16+ Argo ignore-differences on injected CA ConfigMap. `0.0.*` picks latest once `helm dependency update`.
 - name: openshift-sscsi-vault
-  version: '0.0.*'
+  version: '0.0.16'
+  #version: '0.0.*'
   repository: https://charts.validatedpatterns.io
   condition: aapManifest.csi.enabled
