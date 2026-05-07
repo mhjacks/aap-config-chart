@@ -1,6 +1,6 @@
 # aap-config
 
-![Version: 0.2.11](https://img.shields.io/badge/Version-0.2.11-informational?style=flat-square)
+![Version: 0.3.0](https://img.shields.io/badge/Version-0.3.0-informational?style=flat-square)
 
 A Helm chart to build and deploy secrets using external-secrets for ansible-edge-gitops
 
@@ -37,9 +37,11 @@ instance integration if desired.
 
 * v0.2.11: Packaged **`openshift-sscsi-vault`** values default to **`injectTrustedCabundle: true`**, **`createConfigMap: true`**, and **`trustedCabundleDataKey: ca-bundle.crt`** (CNO-injected trust bundle, **`openshift-sscsi-vault` 0.0.15+**). Set **`injectTrustedCabundle: false`** and **`pemLiteral`** (or legacy Ansible CM with **`createConfigMap: false`**) when not using cluster injection.
 
+* v0.3.0: **Breaking (CSI)** — Replaced embedded **`openshift-sscsi-vault`** library dependency with **`vp-sscsi-spc`** (Validated Patterns) calling conventions from **multicloud-gitops** `config-demo`: root **`ocpSecretsStoreCsiVault`**, stub **`vp-sscsi-spc`** values to disable bundled output, and **`include "vp_sscsi_spc.secretproviderclass"`** only. TLS CA ConfigMap sync and **`ClusterRoleBinding`** for the CSI provider live in the **cluster** **`openshift-sscsi-vault`** application (e.g. **0.2.***); this chart emits the **SecretProviderClass** only. Pattern **`clusterGroup.applications[applicationKey].ssCsiWorkloadAuth`** (default **`applicationKey: aap-config`**, i.e. auth under the **aap-config** application, not the vault cluster app) supplies workload namespace / SA / role slug; use **`csiWorkloadIdentity`** to synthesize that block. SPC TLS uses **`tls.projectedClusterCa`** (or explicit **`vaultCACertPath`**) aligned with the provider mount.
+
 ### Vault CSI manifest (`aapManifest.csi`)
 
-When **`aapManifest.csi.enabled`** is true, this chart depends on **`openshift-sscsi-vault`** and renders the Vault CSI SecretProviderClass and related RBAC using named templates from that chart. Set **`csiWorkloadIdentity`** when you want the workload identity fields merged into the SPC. TLS verification against the hub Vault route requires a CA file on the **Vault CSI provider** pod: by default the subchart emits a CNO **`inject-trusted-cabundle`** ConfigMap (same merged trust as cluster **Proxy**); the HashiCorp Vault application should **`extraValueFiles`**-merge that **`configMapName`** at **`syncProviderCaConfigMap.mountDir`** (see aap-starter-kit **`overrides/values-vault-csi-tls-ca.yaml`**). For GitOps-only PEM without injection, set **`pemLiteral`** and **`injectTrustedCabundle: false`** (or manage the ConfigMap out-of-band).
+When **`aapManifest.csi.enabled`** is true, this chart depends on **`vp-sscsi-spc`** and renders the Vault **`SecretProviderClass`** via **`vp_sscsi_spc.secretproviderclass`** (same library pattern as **multicloud-gitops** `config-demo`, but **`ssCsiWorkloadAuth` defaults under `clusterGroup.applications.aap-config`**). Disable the subchart's default manifests with **`vp-sscsi-spc.ocpSecretsStoreCsiVault.secretProviderClass`**. Configure the app under root **`ocpSecretsStoreCsiVault`** (**`applicationKey`**, **`workloadAuthIndex`**, **`objects`**, **`tls`**, **`auth.roleName`**). Deploy the cluster **`openshift-sscsi-vault`** chart separately so the Vault CSI DaemonSet mounts the TLS CA bundle and token-review RBAC exists. Optional init **`aap-manifest-vault-tls-check`** probes Vault HTTPS when TLS verify is on.
 
 ### VP-Secrets-v2
 
@@ -89,8 +91,8 @@ secrets:
 
 | Repository | Name | Version |
 |------------|------|---------|
-| https://charts.validatedpatterns.io | openshift-sscsi-vault | 0.0.* |
 | https://charts.validatedpatterns.io | vp-rbac | 0.1.* |
+| https://charts.validatedpatterns.io | vp-sscsi-spc | 0.1.* |
 
 ## Values
 
@@ -100,6 +102,10 @@ secrets:
 | aapManifest.csi.mountPath | string | `"/pattern-home/aap-manifest"` |  |
 | aapManifest.csi.objectName | string | `"b64content"` |  |
 | aapManifest.csi.secretProviderClassName | string | `"aap-manifest-vault"` |  |
+| aapManifest.csi.vaultTlsCheck.caBundlePath | string | `"/etc/pki/tls/certs/ca-bundle.crt"` |  |
+| aapManifest.csi.vaultTlsCheck.connectTimeoutSeconds | int | `10` |  |
+| aapManifest.csi.vaultTlsCheck.enabled | bool | `true` |  |
+| aapManifest.csi.vaultTlsCheck.maxTimeSeconds | int | `60` |  |
 | aapManifest.key | string | `"secret/data/hub/aap-manifest"` |  |
 | agof.agof_repo | string | `"https://github.com/validatedpatterns/agof.git"` |  |
 | agof.agof_revision | string | `"v2"` |  |
@@ -127,35 +133,27 @@ secrets:
 | global.clusterDomain | string | `"foo.example.com"` |  |
 | global.hubClusterDomain | string | `"hub.example.com"` |  |
 | global.localClusterDomain | string | `""` |  |
-| openshift-sscsi-vault.clusterGroup.applications | object | `{}` |  |
-| openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.enabled | bool | `true` |  |
-| openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.syncProviderCaConfigMap.configMapName | string | `"openshift-sscsi-vault-vault-tls-ca"` | ConfigMap name; pattern `extraValueFiles` should mount this CM on the Vault CSI DaemonSet. |
-| openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.syncProviderCaConfigMap.createConfigMap | bool | `true` | When true (default), Helm emits the sync TLS ConfigMap (CNO injection or PEM from pemLiteral/useLookup). |
-| openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.syncProviderCaConfigMap.enabled | bool | `true` | Passed through to openshift-sscsi-vault: when true, TLS CA sync and SPC `vaultCACertPath` behavior apply. |
-| openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.syncProviderCaConfigMap.injectTrustedCabundle | bool | `true` | When true with createConfigMap true (default), emit CNO inject-trusted-cabundle ConfigMap; SPC uses trustedCabundleDataKey. |
-| openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.syncProviderCaConfigMap.keyInConfigMap | string | `"vault-tls-ca.pem"` | ConfigMap data key for PEM when not using CNO injection (legacy Ansible key). |
-| openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.syncProviderCaConfigMap.mountDir | string | `"/etc/pki/vault-ca"` | Mount directory on the Vault CSI provider pod for the CA PEM. |
-| openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.syncProviderCaConfigMap.pemLiteral | string | `""` | Hub Vault route trust bundle (PEM). When set with injectTrustedCabundle false, render PEM ConfigMap (GitOps-safe). |
-| openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.syncProviderCaConfigMap.preset | string | `"auto"` | Preset for lookup-based CA resolution only (`auto`, `ingressrouterca`, etc.). |
-| openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.syncProviderCaConfigMap.targetNamespace | string | `"vault"` | Namespace for the TLS CA ConfigMap (typically `vault` where the provider pod runs). |
-| openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.syncProviderCaConfigMap.trustedCabundleDataKey | string | `"ca-bundle.crt"` | Key written by CNO after injection; used for vaultCACertPath when injectTrustedCabundle is true. |
-| openshift-sscsi-vault.ocpSecretsStoreCsiVault.caProvider.syncProviderCaConfigMap.useLookup | bool | `false` | When true, subchart uses helm lookup() (needs API at render time; not for default Argo manifest generation). |
-| openshift-sscsi-vault.ocpSecretsStoreCsiVault.objects[0].objectName | string | `"b64content"` |  |
-| openshift-sscsi-vault.ocpSecretsStoreCsiVault.objects[0].secretKey | string | `"b64content"` |  |
-| openshift-sscsi-vault.ocpSecretsStoreCsiVault.objects[0].secretPath | string | `"secret/data/hub/aap-manifest"` |  |
-| openshift-sscsi-vault.ocpSecretsStoreCsiVault.rbac.rolename | string | `"hub-role"` |  |
-| openshift-sscsi-vault.ocpSecretsStoreCsiVault.rbac.serviceAccount.create | bool | `false` |  |
-| openshift-sscsi-vault.ocpSecretsStoreCsiVault.rbac.serviceAccount.name | string | `"aap-config-sa"` |  |
-| openshift-sscsi-vault.ocpSecretsStoreCsiVault.rbac.serviceAccount.namespace | string | `"aap-config"` |  |
-| openshift-sscsi-vault.ocpSecretsStoreCsiVault.secretObjects | list | `[]` |  |
-| openshift-sscsi-vault.ocpSecretsStoreCsiVault.secretProviderClass.enabled | bool | `true` |  |
-| openshift-sscsi-vault.ocpSecretsStoreCsiVault.secretProviderClass.installDefaultManifests | bool | `false` |  |
-| openshift-sscsi-vault.ocpSecretsStoreCsiVault.secretProviderClass.name | string | `"aap-manifest-vault"` |  |
-| openshift-sscsi-vault.ocpSecretsStoreCsiVault.tls.vaultCACertPath | string | `""` |  |
-| openshift-sscsi-vault.ocpSecretsStoreCsiVault.tls.vaultSkipTLSVerify | string | `"false"` |  |
-| openshift-sscsi-vault.ocpSecretsStoreCsiVault.tls.vaultTLSServerName | string | `""` |  |
-| openshift-sscsi-vault.ocpSecretsStoreCsiVault.vault.externalAddress | string | `""` |  |
-| openshift-sscsi-vault.ocpSecretsStoreCsiVault.vault.hubMountPath | string | `"hub"` |  |
+| ocpSecretsStoreCsiVault.applicationKey | string | `"aap-config"` |  |
+| ocpSecretsStoreCsiVault.auth.roleName | string | `"hub-role"` |  |
+| ocpSecretsStoreCsiVault.objects[0].objectName | string | `"b64content"` |  |
+| ocpSecretsStoreCsiVault.objects[0].secretKey | string | `"b64content"` |  |
+| ocpSecretsStoreCsiVault.objects[0].secretPath | string | `"secret/data/hub/aap-manifest"` |  |
+| ocpSecretsStoreCsiVault.secretObjects | list | `[]` |  |
+| ocpSecretsStoreCsiVault.secretProviderClass.enabled | bool | `true` |  |
+| ocpSecretsStoreCsiVault.secretProviderClass.installDefaultManifests | bool | `true` |  |
+| ocpSecretsStoreCsiVault.secretProviderClass.name | string | `"aap-manifest-vault"` |  |
+| ocpSecretsStoreCsiVault.secretProviderClass.namespace | string | `"aap-config"` |  |
+| ocpSecretsStoreCsiVault.tls.projectedClusterCa.enabled | bool | `true` |  |
+| ocpSecretsStoreCsiVault.tls.projectedClusterCa.injectTrustedCabundle | bool | `true` |  |
+| ocpSecretsStoreCsiVault.tls.projectedClusterCa.keyInConfigMap | string | `"vault-tls-ca.pem"` |  |
+| ocpSecretsStoreCsiVault.tls.projectedClusterCa.mountDir | string | `"/etc/pki/vault-ca"` |  |
+| ocpSecretsStoreCsiVault.tls.projectedClusterCa.trustedCabundleDataKey | string | `"ca-bundle.crt"` |  |
+| ocpSecretsStoreCsiVault.tls.vaultCACertPath | string | `""` |  |
+| ocpSecretsStoreCsiVault.tls.vaultSkipTLSVerify | string | `"false"` |  |
+| ocpSecretsStoreCsiVault.tls.vaultTLSServerName | string | `""` |  |
+| ocpSecretsStoreCsiVault.vault.externalAddress | string | `""` |  |
+| ocpSecretsStoreCsiVault.vault.hubMountPath | string | `"hub"` |  |
+| ocpSecretsStoreCsiVault.workloadAuthIndex | int | `0` |  |
 | secretStore.kind | string | `"ClusterSecretStore"` |  |
 | secretStore.name | string | `"vault-backend"` |  |
 | serviceAccountName | string | `"aap-config-sa"` |  |
@@ -196,6 +194,8 @@ secrets:
 | vp-rbac.serviceAccounts.aap-config-sa.roleBindings.clusterRoles[1] | string | `"view-routes"` |  |
 | vp-rbac.serviceAccounts.aap-config-sa.roleBindings.roles[0] | string | `"view-all"` |  |
 | vp-rbac.serviceAccounts.aap-config-sa.roleBindings.roles[1] | string | `"external-secrets-validator"` |  |
+| vp-sscsi-spc.ocpSecretsStoreCsiVault.secretProviderClass.enabled | bool | `false` |  |
+| vp-sscsi-spc.ocpSecretsStoreCsiVault.secretProviderClass.installDefaultManifests | bool | `false` |  |
 
 ----------------------------------------------
 Autogenerated from chart metadata using [helm-docs v1.14.2](https://github.com/norwoodj/helm-docs/releases/v1.14.2)

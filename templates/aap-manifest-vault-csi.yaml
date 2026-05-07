@@ -1,17 +1,9 @@
-{{- if eq (include "aap-config.manifestCsiEnabled" .) "true" }}
-{{- $sc := index .Subcharts "openshift-sscsi-vault" }}
-{{- if not $sc }}
-{{- fail "aapManifest.csi.enabled requires the openshift-sscsi-vault chart dependency (run helm dependency update)." }}
+{{- if eq (include "aap-config.manifestCsiEnabled" $) "true" }}
+{{- if not (index .Subcharts "vp-sscsi-spc") }}
+{{- fail "aapManifest.csi.enabled requires the vp-sscsi-spc chart dependency (run helm dependency update)." }}
 {{- end }}
-{{- $scg := default dict $sc.Values.clusterGroup }}
-{{- $pcg := default dict $.Values.clusterGroup }}
-{{- $cg := mergeOverwrite $scg $pcg }}
-{{- $sapps := default dict $scg.applications }}
-{{- $papps := default dict $pcg.applications }}
-{{- $_ := set $cg "applications" (mergeOverwrite $sapps $papps) }}
-{{- $parentVault := default dict (index $.Values "openshift-sscsi-vault") }}
+{{- $vals := deepCopy $.Values }}
 {{- $id := $.Values.csiWorkloadIdentity | default dict }}
-{{- $ociPatch := dict }}
 {{- if and $id (eq true (default false $id.enabled)) }}
 {{- $sa := required "csiWorkloadIdentity.serviceAccount is required when csiWorkloadIdentity.enabled" $id.serviceAccount }}
 {{- $ns := required "csiWorkloadIdentity.namespace is required when csiWorkloadIdentity.enabled" $id.namespace }}
@@ -19,14 +11,22 @@
 {{- $app := default "aap-config" $id.appKey }}
 {{- $explicit := $id.vaultKubernetesAuthRole | default "" | trim }}
 {{- $slug := include "aap-config.vaultSscsiSlug" (dict "ns" $ns "sa" $sa "app" $app) }}
-{{- $computed := printf "%s-sscsi-%s" $mount $slug }}
-{{- $role := ternary $explicit $computed (ne $explicit "") }}
-{{- $rbac := dict "rolename" $role "serviceAccount" (dict "create" false "name" $sa "namespace" $ns) }}
-{{- $oci := dict "rbac" $rbac }}
-{{- $baseTls := $sc.Values.ocpSecretsStoreCsiVault.tls | default dict }}
-{{- $pv := index $parentVault "ocpSecretsStoreCsiVault" | default dict }}
-{{- $parentTls := mergeOverwrite (deepCopy $baseTls) (deepCopy ($pv.tls | default dict)) }}
-{{- $tls := deepCopy $parentTls }}
+{{- $appKey := (index $vals "ocpSecretsStoreCsiVault" | default dict).applicationKey | default "aap-config" | trim }}
+{{- $cg := deepCopy ($vals.clusterGroup | default dict) }}
+{{- $apps := deepCopy ($cg.applications | default dict) }}
+{{- $appEntry := deepCopy (index $apps $appKey | default dict) }}
+{{- $entry := dict "serviceAccount" $sa "namespace" $ns "cluster" $mount }}
+{{- if ne $explicit "" }}
+{{- $_ := set $entry "roleName" $explicit }}
+{{- else }}
+{{- $_ := set $entry "roleSlug" $slug }}
+{{- end }}
+{{- $_ := set $appEntry "ssCsiWorkloadAuth" (list $entry) }}
+{{- $_ := set $apps $appKey $appEntry }}
+{{- $_ := set $cg "applications" $apps }}
+{{- $_ := set $vals "clusterGroup" $cg }}
+{{- $oci := index $vals "ocpSecretsStoreCsiVault" | default dict }}
+{{- $tls := deepCopy ($oci.tls | default dict) }}
 {{- if hasKey $id "vaultSkipTLSVerify" }}
 {{- $tls = mergeOverwrite $tls (dict "vaultSkipTLSVerify" (trim (include "aap-config.normalizeVaultSkipTLSVerify" (dict "v" (index $id "vaultSkipTLSVerify"))))) }}
 {{- end }}
@@ -38,18 +38,18 @@
 {{- if gt (len $vsn) 0 }}
 {{- $tls = mergeOverwrite $tls (dict "vaultTLSServerName" $vsn) }}
 {{- end }}
-{{- $_ := set $oci "tls" $tls }}
-{{- $ociPatch = dict "ocpSecretsStoreCsiVault" $oci }}
+{{- $_ := set $vals "ocpSecretsStoreCsiVault" (mergeOverwrite $oci (dict "tls" $tls)) }}
 {{- end }}
-{{- $vaultVals := mergeOverwrite $sc.Values $parentVault (dict "clusterGroup" $cg) $ociPatch }}
-{{- $ociVault := index $vaultVals "ocpSecretsStoreCsiVault" | default dict }}
-{{- $ociTls := $ociVault.tls | default dict }}
-{{- $nSkip := trim (include "aap-config.normalizeVaultSkipTLSVerify" (dict "v" (index $ociTls "vaultSkipTLSVerify"))) }}
-{{- $ociTlsN := mergeOverwrite $ociTls (dict "vaultSkipTLSVerify" $nSkip) }}
-{{- $vaultVals := mergeOverwrite $vaultVals (dict "ocpSecretsStoreCsiVault" (mergeOverwrite $ociVault (dict "tls" $ociTlsN))) }}
-{{- $vaultCtx := dict "Chart" $sc.Chart "Capabilities" $sc.Capabilities "Release" $sc.Release "Values" $vaultVals }}
-{{- include "openshift_sscsi_vault.renderSyncCaConfigMap" $vaultCtx }}
-{{- include "openshift_sscsi_vault.secretproviderclass" $vaultCtx }}
+{{- $oci := index $vals "ocpSecretsStoreCsiVault" | default dict }}
+{{- $tls := $oci.tls | default dict }}
+{{- $nSkip := trim (include "aap-config.normalizeVaultSkipTLSVerify" (dict "v" (index $tls "vaultSkipTLSVerify"))) }}
+{{- $_ := set $vals "ocpSecretsStoreCsiVault" (mergeOverwrite $oci (dict "tls" (mergeOverwrite $tls (dict "vaultSkipTLSVerify" $nSkip)))) }}
+{{- if and ($vals.ocpSecretsStoreCsiVault.secretProviderClass | default dict).installDefaultManifests }}
+{{- $ctx := dict "Chart" .Chart "Capabilities" .Capabilities "Release" .Release "Template" .Template "Values" $vals }}
+{{- $spc := include "vp_sscsi_spc.secretproviderclass" $ctx | trim }}
+{{- if $spc }}
 ---
-{{- include "openshift_sscsi_vault.workload_rbac" $vaultCtx }}
+{{ $spc }}
+{{- end }}
+{{- end }}
 {{- end }}

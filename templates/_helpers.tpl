@@ -3,7 +3,7 @@
 {{- end }}
 
 {{/*
-Normalize tls.vaultSkipTLSVerify to the strings "true" or "false" for Vault CSI (same idea as openshift-sscsi-vault-chart).
+Normalize tls.vaultSkipTLSVerify to the strings "true" or "false" for Vault CSI (same idea as vp-sscsi-spc).
 Accepts bool, string, or empty/nil (defaults to false). Do not use sprig "default" with booleans — false is treated as empty.
 */}}
 {{- define "aap-config.normalizeVaultSkipTLSVerify" -}}
@@ -50,6 +50,39 @@ If vaultKubernetesAuthRole is set, it is used as the full Vault role name (e.g. 
 {{- $s -}}
 {{- end }}
 
+{{/* Effective Vault HTTPS base URL for CSI (matches vp_sscsi_spc.secretproviderclass vaultAddress). */}}
+{{- define "aap-config.effectiveCsiVaultHttpsBase" -}}
+{{- $oci := index $.Values "ocpSecretsStoreCsiVault" | default dict -}}
+{{- $ext := ($oci.vault | default dict).externalAddress | default "" | trim -}}
+{{- if ne $ext "" -}}
+{{- $ext -}}
+{{- else -}}
+https://vault-vault.{{ $.Values.global.hubClusterDomain }}
+{{- end -}}
+{{- end }}
+
+{{/* vaultSkipTLSVerify from ocpSecretsStoreCsiVault.tls + optional csiWorkloadIdentity override (strings "true"/"false"). */}}
+{{- define "aap-config.effectiveCsiVaultSkipTLSVerifyString" -}}
+{{- $oci := index $.Values "ocpSecretsStoreCsiVault" | default dict -}}
+{{- $v := index ($oci.tls | default dict) "vaultSkipTLSVerify" -}}
+{{- $id := $.Values.csiWorkloadIdentity | default dict -}}
+{{- if and $id (eq true (default false $id.enabled)) (hasKey $id "vaultSkipTLSVerify") -}}
+{{- $v = index $id "vaultSkipTLSVerify" -}}
+{{- end -}}
+{{- trim (include "aap-config.normalizeVaultSkipTLSVerify" (dict "v" $v)) -}}
+{{- end }}
+
+{{- define "aap-config.manifestCsiVaultTlsCheckEnabled" -}}
+{{- if ne (include "aap-config.manifestCsiEnabled" $) "true" -}}false
+{{- else if eq (include "aap-config.effectiveCsiVaultSkipTLSVerifyString" $) "true" -}}false
+{{- else -}}
+{{- $vtc := $.Values.aapManifest.csi.vaultTlsCheck | default dict -}}
+{{- if and (hasKey $vtc "enabled") (eq $vtc.enabled false) -}}false
+{{- else -}}true
+{{- end -}}
+{{- end -}}
+{{- end }}
+
 {{- define "aap-config.app.configjobspec" -}}
 restartPolicy: Never
 serviceAccountName: {{ include "aap-config.effectiveServiceAccountName" $ }}
@@ -76,6 +109,31 @@ volumes:
         secretProviderClass: {{ $.Values.aapManifest.csi.secretProviderClassName | quote }}
 {{- end }}
 initContainers:
+{{- if eq (include "aap-config.manifestCsiVaultTlsCheckEnabled" $) "true" }}
+{{- $vtcjob := index $.Values.aapManifest.csi "vaultTlsCheck" | default dict }}
+  - name: aap-manifest-vault-tls-check
+    image: {{ .Values.configJob.image }}
+    imagePullPolicy: {{ $.Values.configJob.imagePullPolicy }}
+    command:
+      - /bin/bash
+      - -c
+      - |
+          set -euo pipefail
+          url={{ include "aap-config.effectiveCsiVaultHttpsBase" $ | quote }}
+          health="${url%/}/v1/sys/health"
+          ca={{ $vtcjob.caBundlePath | default "/etc/pki/tls/certs/ca-bundle.crt" | quote }}
+          ct={{ $vtcjob.connectTimeoutSeconds | default 10 | int }}
+          mt={{ $vtcjob.maxTimeSeconds | default 60 | int }}
+          # No curl -f: Vault may return 503 (sealed) etc.; we only require TLS + HTTP response.
+          args=(-sS --connect-timeout "$ct" --max-time "$mt")
+          if [[ -f "$ca" ]]; then
+            args+=(--cacert "$ca")
+          else
+            echo "vaultTlsCheck: CA bundle not found at $ca; probing with curl default trust store" >&2
+          fi
+          echo "vaultTlsCheck: GET $health" >&2
+          curl "${args[@]}" "$health" -o /dev/null
+{{- end }}
   - name: agof-init
     image: {{ .Values.configJob.image }}
     imagePullPolicy: {{ $.Values.configJob.imagePullPolicy }}

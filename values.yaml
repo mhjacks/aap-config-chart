@@ -6,13 +6,22 @@ secretStore:
 aapManifest:
   key: secret/data/hub/aap-manifest
   # When enabled: no ExternalSecret for aap-manifest; Vault CSI mounts the manifest instead.
-  # Requires openshift-sscsi-vault dependency, global/clusterGroup values for the SPC, and Vault
-  # Kubernetes auth bound to serviceAccountName in this namespace.
+  # Requires vp-sscsi-spc dependency, cluster **openshift-sscsi-vault** app for provider TLS/RBAC,
+  # and pattern `clusterGroup.applications[applicationKey].ssCsiWorkloadAuth` (or csiWorkloadIdentity).
   csi:
     enabled: false
     mountPath: /pattern-home/aap-manifest
     objectName: b64content
     secretProviderClassName: aap-manifest-vault
+    # When CSI manifest is used and Vault TLS verification is on (SPC vaultSkipTLSVerify not true),
+    # run an init container before agof-init that probes Vault HTTPS (same URL as the SPC) so TLS
+    # failures surface before git clone. Uses configJob.image; override caBundlePath if your image
+    # stores trust elsewhere.
+    vaultTlsCheck:
+      enabled: true
+      caBundlePath: /etc/pki/tls/certs/ca-bundle.crt
+      connectTimeoutSeconds: 10
+      maxTimeSeconds: 60
 
 agof:
   doAutoHubVaultConfig: true
@@ -55,8 +64,8 @@ serviceAccountName: aap-config-sa
 serviceAccountNamespace: aap-config
 
 # Single block for Vault CSI workload identity (SA, namespace, Vault Kubernetes auth role).
-# When enabled, templates merge rbac.rolename + serviceAccount into openshift-sscsi-vault and
-# drive workload pods' serviceAccountName from the same fields.
+# When enabled, templates synthesize clusterGroup.applications[ocpSecretsStoreCsiVault.applicationKey].ssCsiWorkloadAuth
+# for vp-sscsi-spc and drive workload pods' serviceAccountName from the same fields.
 csiWorkloadIdentity:
   enabled: false
   serviceAccount: ""
@@ -68,77 +77,50 @@ csiWorkloadIdentity:
   # matching vault_ss_csi_role_slug_mode: stable_slug in rhvp.cluster_utils.
   vaultKubernetesAuthRole: ""
   # Optional (non-empty only): tls.vaultSkipTLSVerify ("true"/"false"), vaultCACertPath, vaultTLSServerName
-  # merged into openshift-sscsi-vault SPC. Omit vaultSkipTLSVerify here to inherit subchart + overrides.
+  # merged into ocpSecretsStoreCsiVault for the SPC. Omit vaultSkipTLSVerify here to inherit values below.
 
-# Used only when aapManifest.csi.enabled (openshift-sscsi-vault subchart). Same value shape as
-# openshift-sscsi-vault-chart (ocpSecretsStoreCsiVault + clusterGroup for hub/spoke auth).
-# clusterGroup here merges with the parent chart clusterGroup; applications maps are merged so
-# pattern-level hashicorp-vault entries apply without duplicating them under this key.
-openshift-sscsi-vault:
-  clusterGroup:
-    applications: {}
+# Subchart vp-sscsi-spc: disable bundled manifests; parent renders SPC via include (see multicloud-gitops config-demo).
+vp-sscsi-spc:
   ocpSecretsStoreCsiVault:
     secretProviderClass:
+      enabled: false
       installDefaultManifests: false
+
+# App SecretProviderClass (vp-sscsi-spc). Namespace, Vault role, and SA name resolve from
+# clusterGroup.applications[applicationKey].ssCsiWorkloadAuth[workloadAuthIndex] when the pattern supplies it.
+# Default applicationKey is **aap-config** so ssCsiWorkloadAuth lives with this chart's Argo application
+# (unlike config-demo, which hangs auth under openshift-sscsi-vault). Override applicationKey if your pattern uses another key.
+# Cluster chart openshift-sscsi-vault (vault ns) still supplies TLS CA for the CSI provider and token-review RBAC; this chart only emits the SPC.
+ocpSecretsStoreCsiVault:
+  applicationKey: aap-config
+  workloadAuthIndex: 0
+  secretProviderClass:
+    installDefaultManifests: true
+    enabled: true
+    name: aap-manifest-vault
+    namespace: aap-config
+  auth:
+    roleName: hub-role
+  objects:
+    - objectName: b64content
+      secretPath: secret/data/hub/aap-manifest
+      secretKey: b64content
+  secretObjects: []
+  vault:
+    externalAddress: ""
+    hubMountPath: hub
+  tls:
+    vaultSkipTLSVerify: "false"
+    # Non-empty wins over projectedClusterCa. Align with openshift-sscsi-vault sync mount on the CSI provider pod.
+    vaultCACertPath: ""
+    vaultTLSServerName: ""
+    # When enabled and vaultCACertPath is empty, SPC vaultCACertPath matches openshift-sscsi-vault defaults (CNO bundle path).
+    projectedClusterCa:
       enabled: true
-      name: aap-manifest-vault
-    rbac:
-      rolename: hub-role
-      serviceAccount:
-        create: false
-        name: aap-config-sa
-        namespace: aap-config
-    objects:
-      - objectName: b64content
-        secretPath: secret/data/hub/aap-manifest
-        secretKey: b64content
-    secretObjects: []
-    vault:
-      externalAddress: ""
-      hubMountPath: hub
-    # CA for Vault HTTPS (openshift-sscsi-vault-chart 0.0.15+ CNO bundle; 0.0.16+ Argo annotation on that CM).
-    # SecretProviderClass stays in the workload namespace (e.g. aap-config); this ConfigMap targets the
-    # namespace where the Vault CSI *provider* DaemonSet runs. Pods can only mount ConfigMaps from their
-    # own namespace, and the process that validates Vault TLS is the provider pod (vault ns), not the Job.
-    # Mount configMapName at mountDir on that DaemonSet (pattern vault extraValueFiles; aap-starter-kit
-    # values-vault-csi-tls-ca.yaml). GitOps PEM: injectTrustedCabundle false + pemLiteral. Legacy Ansible:
-    # injectTrustedCabundle false, createConfigMap false, keyInConfigMap aligned.
-    caProvider:
-      enabled: true
-      syncProviderCaConfigMap:
-        # -- Passed through to openshift-sscsi-vault: when true, TLS CA sync and SPC `vaultCACertPath` behavior apply.
-        enabled: true
-        # -- When true with createConfigMap true (default), emit CNO inject-trusted-cabundle ConfigMap; SPC uses trustedCabundleDataKey.
-        injectTrustedCabundle: true
-        # -- Key written by CNO after injection; used for vaultCACertPath when injectTrustedCabundle is true.
-        trustedCabundleDataKey: ca-bundle.crt
-        # -- openshift-sscsi-vault 0.0.16+: annotation so Argo skips drift on CNO-filled data (needs Argo that honors it).
-        argocdIgnoreInjectedTrustedCabundleData: true
-        # -- Extra annotations on the sync TLS ConfigMap (same keys override argocdIgnore* annotation).
-        configMapAnnotations: {}
-        # -- Hub Vault route trust bundle (PEM). When set with injectTrustedCabundle false, render PEM ConfigMap (GitOps-safe).
-        pemLiteral: ""
-        # -- When true, subchart uses helm lookup() (needs API at render time; not for default Argo manifest generation).
-        useLookup: false
-        # -- When true (default), Helm emits the sync TLS ConfigMap (CNO injection or PEM from pemLiteral/useLookup).
-        createConfigMap: true
-        # -- Namespace for the TLS CA ConfigMap: must match the Vault CSI provider pod namespace (not the SPC namespace).
-        targetNamespace: vault
-        # -- ConfigMap name; pattern `extraValueFiles` should mount this CM on the Vault CSI DaemonSet.
-        configMapName: openshift-sscsi-vault-vault-tls-ca
-        # -- Mount directory on the Vault CSI provider pod for the CA PEM.
-        mountDir: /etc/pki/vault-ca
-        # -- ConfigMap data key for PEM when not using CNO injection (legacy Ansible key).
-        keyInConfigMap: vault-tls-ca.pem
-        # -- Preset for lookup-based CA resolution only (`auto`, `ingressrouterca`, etc.).
-        preset: auto
-    # Align with openshift-sscsi-vault defaults: verify hub Vault HTTPS when the CA is available on the
-    # Vault CSI provider (CNO bundle at mountDir/trustedCabundleDataKey, or mountDir/keyInConfigMap).
-    # Set vaultSkipTLSVerify: "true" only for break-glass without a trust bundle on the provider.
-    tls:
-      vaultSkipTLSVerify: "false"
-      vaultCACertPath: ""
-      vaultTLSServerName: ""
+      mountDir: "/etc/pki/vault-ca"
+      injectTrustedCabundle: true
+      trustedCabundleDataKey: "ca-bundle.crt"
+      keyInConfigMap: "vault-tls-ca.pem"
 global:
   hubClusterDomain: hub.example.com
   clusterDomain: foo.example.com
