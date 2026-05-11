@@ -24,9 +24,9 @@ aapManifest:
       maxTimeSeconds: 60
 
 # Cluster merged CA bundle in the workload namespace (same pattern as multicloud-gitops charts/all/config-demo:
-# config-demo-vault-tls-ca-configmap.yaml). CNO injects bundleKey into .data after apply; mount on job pods for
-# vaultTlsCheck and keep in sync with SecretProviderClass vaultCACertPath when tls.vaultCACertPath is empty.
-# Cluster chart openshift-sscsi-vault still mounts the same path layout on the Vault CSI *provider* DaemonSet.
+# config-demo-vault-tls-ca-configmap.yaml). CNO injects bundleKey into .data after apply; used for vaultTlsCheck
+# init curl and projected into config job pods. This does NOT set SecretProviderClass vaultCACertPath (that path
+# must exist on the Vault CSI provider DaemonSet — see openshift-sscsi-vault and ocpSecretsStoreCsiVault.tls).
 vaultCaBundle:
   enabled: true
   configMapName: aap-manifest-vault-tls-ca
@@ -114,6 +114,7 @@ ocpSecretsStoreCsiVault:
     hubMountPath: hub
   tls:
     vaultSkipTLSVerify: "false"
+    # PEM path on the Vault CSI *provider* DaemonSet (not the workload pod). vaultCaBundle does not populate this.
     # Non-empty wins over projectedClusterCa. Align with openshift-sscsi-vault sync mount on the CSI provider pod.
     vaultCACertPath: ""
     vaultTLSServerName: ""
