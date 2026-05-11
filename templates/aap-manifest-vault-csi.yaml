@@ -2,18 +2,8 @@
 {{- if not (index .Subcharts "vp-sscsi-spc") }}
 {{- fail "aapManifest.csi.enabled requires the vp-sscsi-spc chart dependency (run helm dependency update)." }}
 {{- end }}
-{{- $id := $.Values.csiWorkloadIdentity | default dict }}
-{{- $vpsc := index $.Values "vp-sscsi-spc" | default dict }}
-{{- $vpscOci := index $vpsc "ocpSecretsStoreCsiVault" | default dict }}
-{{- $vpscSpc := $vpscOci.secretProviderClass | default dict }}
-{{- $subInstall := true }}
-{{- if hasKey $vpscSpc "installDefaultManifests" }}
-{{- $subInstall = index $vpscSpc "installDefaultManifests" }}
-{{- end }}
-{{- if and (eq (include "aap-config.csiWorkloadIdentityEnabled" $) "true") $subInstall }}
-{{- fail "When csiWorkloadIdentity.enabled is true, set vp-sscsi-spc.ocpSecretsStoreCsiVault.secretProviderClass.installDefaultManifests to false so the parent renders the SecretProviderClass with synthesized ssCsiWorkloadAuth (or disable csiWorkloadIdentity and use pattern-supplied clusterGroup)." }}
-{{- end }}
 {{- $vals := deepCopy $.Values }}
+{{- $id := $.Values.csiWorkloadIdentity | default dict }}
 {{- if and $id (eq true (default false $id.enabled)) }}
 {{- $sa := required "csiWorkloadIdentity.serviceAccount is required when csiWorkloadIdentity.enabled" $id.serviceAccount }}
 {{- $ns := required "csiWorkloadIdentity.namespace is required when csiWorkloadIdentity.enabled" $id.namespace }}
@@ -54,13 +44,11 @@
 {{- $tls := $oci.tls | default dict }}
 {{- $nSkip := trim (include "aap-config.normalizeVaultSkipTLSVerify" (dict "v" (index $tls "vaultSkipTLSVerify"))) }}
 {{- $_ := set $vals "ocpSecretsStoreCsiVault" (mergeOverwrite $oci (dict "tls" (mergeOverwrite $tls (dict "vaultSkipTLSVerify" $nSkip)))) }}
-{{- if and $id (eq true (default false $id.enabled)) }}
 {{- $sub := index $.Subcharts "vp-sscsi-spc" }}
 {{- $ctx := dict "Chart" $sub.Chart "Capabilities" $.Capabilities "Release" $.Release "Template" $sub.Template "Values" $vals }}
 {{- $spc := include "vp_sscsi_spc.secretproviderclass" $ctx | trim }}
 {{- if $spc }}
 ---
 {{ $spc }}
-{{- end }}
 {{- end }}
 {{- end }}

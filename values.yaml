@@ -65,9 +65,7 @@ serviceAccountNamespace: aap-config
 
 # Single block for Vault CSI workload identity (SA, namespace, Vault Kubernetes auth role).
 # When enabled, templates synthesize clusterGroup.applications[ocpSecretsStoreCsiVault.applicationKey].ssCsiWorkloadAuth
-# for the SPC and drive workload pods' serviceAccountName from the same fields. Set
-# vp-sscsi-spc.ocpSecretsStoreCsiVault.secretProviderClass.installDefaultManifests to false so the parent renders the SPC
-# (the dependency cannot see this synthesized merge in its Values).
+# for the SecretProviderClass and drive workload pods' serviceAccountName from the same fields.
 csiWorkloadIdentity:
   enabled: false
   serviceAccount: ""
@@ -123,41 +121,15 @@ global:
 clusterGroup: &aapClusterGroup
   applications: {}
 
-# Subchart vp-sscsi-spc: renders SecretProviderClass (and any future bundled manifests) when CSI is enabled.
-# Duplicate ocpSecretsStoreCsiVault / clusterGroup here: Helm does not pass parent-only keys into dependencies.
-# Keep this block in sync with root ocpSecretsStoreCsiVault except secretProviderClass.installDefaultManifests (true here).
-# When csiWorkloadIdentity.enabled is true, set secretProviderClass.installDefaultManifests to false here so the
-# parent template can render the SPC with synthesized ssCsiWorkloadAuth (see templates/aap-manifest-vault-csi.yaml).
+# Subchart vp-sscsi-spc: dependency supplies library templates; SecretProviderClass is rendered by the parent
+# (templates/aap-manifest-vault-csi.yaml) so csiWorkloadIdentity merges apply. Keep installDefaultManifests false
+# to avoid duplicate SPCs. Mirror clusterGroup for consistency (Helm does not pass parent-only keys into subcharts).
 vp-sscsi-spc:
   clusterGroup: *aapClusterGroup
   ocpSecretsStoreCsiVault:
-    applicationKey: aap-config
-    workloadAuthIndex: 0
     secretProviderClass:
-      installDefaultManifests: true
-      enabled: true
-      name: aap-manifest-vault
-      namespace: aap-config
-    auth:
-      roleName: hub-role
-    objects:
-      - objectName: b64content
-        secretPath: secret/data/hub/aap-manifest
-        secretKey: b64content
-    secretObjects: []
-    vault:
-      externalAddress: ""
-      hubMountPath: hub
-    tls:
-      vaultSkipTLSVerify: "false"
-      vaultCACertPath: ""
-      vaultTLSServerName: ""
-      projectedClusterCa:
-        enabled: true
-        mountDir: "/etc/pki/vault-ca"
-        injectTrustedCabundle: true
-        trustedCabundleDataKey: "ca-bundle.crt"
-        keyInConfigMap: "vault-tls-ca.pem"
+      enabled: false
+      installDefaultManifests: false
 validationJob:
   disabled: false
   activeDeadlineSeconds: 3600
