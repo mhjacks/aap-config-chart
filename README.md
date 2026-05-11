@@ -1,6 +1,6 @@
 # aap-config
 
-![Version: 0.3.0](https://img.shields.io/badge/Version-0.3.0-informational?style=flat-square)
+![Version: 0.3.1](https://img.shields.io/badge/Version-0.3.1-informational?style=flat-square)
 
 A Helm chart to build and deploy secrets using external-secrets for ansible-edge-gitops
 
@@ -39,9 +39,11 @@ instance integration if desired.
 
 * v0.3.0: **Breaking (CSI)** — Replaced embedded **`openshift-sscsi-vault`** library dependency with **`vp-sscsi-spc`** (Validated Patterns) calling conventions from **multicloud-gitops** `config-demo`: root **`ocpSecretsStoreCsiVault`**, stub **`vp-sscsi-spc`** values to disable bundled output, and **`include "vp_sscsi_spc.secretproviderclass"`** only. TLS CA ConfigMap sync and **`ClusterRoleBinding`** for the CSI provider live in the **cluster** **`openshift-sscsi-vault`** application (e.g. **0.2.***); this chart emits the **SecretProviderClass** only. Pattern **`clusterGroup.applications[applicationKey].ssCsiWorkloadAuth`** (default **`applicationKey: aap-config`**, i.e. auth under the **aap-config** application, not the vault cluster app) supplies workload namespace / SA / role slug; use **`csiWorkloadIdentity`** to synthesize that block. SPC TLS uses **`tls.projectedClusterCa`** (or explicit **`vaultCACertPath`**) aligned with the provider mount.
 
+* v0.3.1: **CSI** — The **`vp-sscsi-spc`** dependency now renders the **SecretProviderClass** via its **`installDefaultManifests`** template (same **`vp_sscsi_spc.secretproviderclass`** library); root **`ocpSecretsStoreCsiVault`** and **`clusterGroup`** are duplicated under **`vp-sscsi-spc`** so the subchart receives **`clusterGroup`** (Helm does not pass parent-only keys into dependencies). Any future bundled manifests from **`vp-sscsi-spc`** (for example a workload ConfigMap) ship with that chart automatically. **`csiWorkloadIdentity`**: set **`vp-sscsi-spc.ocpSecretsStoreCsiVault.secretProviderClass.installDefaultManifests`** to **`false`** so the parent template can still render the SPC with synthesized **`ssCsiWorkloadAuth`**.
+
 ### Vault CSI manifest (`aapManifest.csi`)
 
-When **`aapManifest.csi.enabled`** is true, this chart depends on **`vp-sscsi-spc`** and renders the Vault **`SecretProviderClass`** via **`vp_sscsi_spc.secretproviderclass`** (same library pattern as **multicloud-gitops** `config-demo`, but **`ssCsiWorkloadAuth` defaults under `clusterGroup.applications.aap-config`**). Disable the subchart's default manifests with **`vp-sscsi-spc.ocpSecretsStoreCsiVault.secretProviderClass`**. Configure the app under root **`ocpSecretsStoreCsiVault`** (**`applicationKey`**, **`workloadAuthIndex`**, **`objects`**, **`tls`**, **`auth.roleName`**). Deploy the cluster **`openshift-sscsi-vault`** chart separately so the Vault CSI DaemonSet mounts the TLS CA bundle and token-review RBAC exists. Optional init **`aap-manifest-vault-tls-check`** probes Vault HTTPS when TLS verify is on.
+When **`aapManifest.csi.enabled`** is true, this chart depends on **`vp-sscsi-spc`**, which renders the Vault **`SecretProviderClass`** from **`charts/vp-sscsi-spc/templates/install-default-manifests.yaml`** when **`vp-sscsi-spc.ocpSecretsStoreCsiVault.secretProviderClass.installDefaultManifests`** is **`true`** (default). Configure **`objects`**, **`tls`**, **`auth`**, and **`secretProviderClass`** metadata on root **`ocpSecretsStoreCsiVault`**; keep **`vp-sscsi-spc.ocpSecretsStoreCsiVault`** in sync with that block (values defaults duplicate it) so the dependency sees **`clusterGroup`** and **`ocpSecretsStoreCsiVault`**. **`vp-sscsi-spc.clusterGroup`** aliases root **`clusterGroup`** via a YAML anchor so **`ssCsiWorkloadAuth`** stays aligned. If **`csiWorkloadIdentity.enabled`** is **`true`**, set **`vp-sscsi-spc.ocpSecretsStoreCsiVault.secretProviderClass.installDefaultManifests`** to **`false`** so the parent **`templates/aap-manifest-vault-csi.yaml`** renders the SPC with merged **`clusterGroup`**. Deploy the cluster **`openshift-sscsi-vault`** chart separately so the Vault CSI DaemonSet mounts the TLS CA bundle (**ConfigMap** sync for the provider) and token-review RBAC exists. Optional init **`aap-manifest-vault-tls-check`** probes Vault HTTPS when TLS verify is on.
 
 ### VP-Secrets-v2
 
@@ -140,7 +142,7 @@ secrets:
 | ocpSecretsStoreCsiVault.objects[0].secretPath | string | `"secret/data/hub/aap-manifest"` |  |
 | ocpSecretsStoreCsiVault.secretObjects | list | `[]` |  |
 | ocpSecretsStoreCsiVault.secretProviderClass.enabled | bool | `true` |  |
-| ocpSecretsStoreCsiVault.secretProviderClass.installDefaultManifests | bool | `true` |  |
+| ocpSecretsStoreCsiVault.secretProviderClass.installDefaultManifests | bool | `false` |  |
 | ocpSecretsStoreCsiVault.secretProviderClass.name | string | `"aap-manifest-vault"` |  |
 | ocpSecretsStoreCsiVault.secretProviderClass.namespace | string | `"aap-config"` |  |
 | ocpSecretsStoreCsiVault.tls.projectedClusterCa.enabled | bool | `true` |  |
@@ -194,8 +196,28 @@ secrets:
 | vp-rbac.serviceAccounts.aap-config-sa.roleBindings.clusterRoles[1] | string | `"view-routes"` |  |
 | vp-rbac.serviceAccounts.aap-config-sa.roleBindings.roles[0] | string | `"view-all"` |  |
 | vp-rbac.serviceAccounts.aap-config-sa.roleBindings.roles[1] | string | `"external-secrets-validator"` |  |
-| vp-sscsi-spc.ocpSecretsStoreCsiVault.secretProviderClass.enabled | bool | `false` |  |
-| vp-sscsi-spc.ocpSecretsStoreCsiVault.secretProviderClass.installDefaultManifests | bool | `false` |  |
+| vp-sscsi-spc.clusterGroup.applications | object | `{}` |  |
+| vp-sscsi-spc.ocpSecretsStoreCsiVault.applicationKey | string | `"aap-config"` |  |
+| vp-sscsi-spc.ocpSecretsStoreCsiVault.auth.roleName | string | `"hub-role"` |  |
+| vp-sscsi-spc.ocpSecretsStoreCsiVault.objects[0].objectName | string | `"b64content"` |  |
+| vp-sscsi-spc.ocpSecretsStoreCsiVault.objects[0].secretKey | string | `"b64content"` |  |
+| vp-sscsi-spc.ocpSecretsStoreCsiVault.objects[0].secretPath | string | `"secret/data/hub/aap-manifest"` |  |
+| vp-sscsi-spc.ocpSecretsStoreCsiVault.secretObjects | list | `[]` |  |
+| vp-sscsi-spc.ocpSecretsStoreCsiVault.secretProviderClass.enabled | bool | `true` |  |
+| vp-sscsi-spc.ocpSecretsStoreCsiVault.secretProviderClass.installDefaultManifests | bool | `true` |  |
+| vp-sscsi-spc.ocpSecretsStoreCsiVault.secretProviderClass.name | string | `"aap-manifest-vault"` |  |
+| vp-sscsi-spc.ocpSecretsStoreCsiVault.secretProviderClass.namespace | string | `"aap-config"` |  |
+| vp-sscsi-spc.ocpSecretsStoreCsiVault.tls.projectedClusterCa.enabled | bool | `true` |  |
+| vp-sscsi-spc.ocpSecretsStoreCsiVault.tls.projectedClusterCa.injectTrustedCabundle | bool | `true` |  |
+| vp-sscsi-spc.ocpSecretsStoreCsiVault.tls.projectedClusterCa.keyInConfigMap | string | `"vault-tls-ca.pem"` |  |
+| vp-sscsi-spc.ocpSecretsStoreCsiVault.tls.projectedClusterCa.mountDir | string | `"/etc/pki/vault-ca"` |  |
+| vp-sscsi-spc.ocpSecretsStoreCsiVault.tls.projectedClusterCa.trustedCabundleDataKey | string | `"ca-bundle.crt"` |  |
+| vp-sscsi-spc.ocpSecretsStoreCsiVault.tls.vaultCACertPath | string | `""` |  |
+| vp-sscsi-spc.ocpSecretsStoreCsiVault.tls.vaultSkipTLSVerify | string | `"false"` |  |
+| vp-sscsi-spc.ocpSecretsStoreCsiVault.tls.vaultTLSServerName | string | `""` |  |
+| vp-sscsi-spc.ocpSecretsStoreCsiVault.vault.externalAddress | string | `""` |  |
+| vp-sscsi-spc.ocpSecretsStoreCsiVault.vault.hubMountPath | string | `"hub"` |  |
+| vp-sscsi-spc.ocpSecretsStoreCsiVault.workloadAuthIndex | int | `0` |  |
 
 ----------------------------------------------
 Autogenerated from chart metadata using [helm-docs v1.14.2](https://github.com/norwoodj/helm-docs/releases/v1.14.2)

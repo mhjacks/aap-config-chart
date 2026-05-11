@@ -5,12 +5,13 @@ home: https://github.com/validatedpatterns/aap-config-chart.git
 keywords:
 - pattern
 name: aap-config
-version: 0.3.0
+version: 0.3.1
 dependencies:
 - name: vp-rbac
   version: '0.1.*'
   repository: https://charts.validatedpatterns.io
-# Library chart: parent renders SPC via include (multicloud-gitops config-demo pattern); see values vp-sscsi-spc + ocpSecretsStoreCsiVault.
+# vp-sscsi-spc: renders SecretProviderClass from the dependency when CSI is enabled (installDefaultManifests).
+# Root ocpSecretsStoreCsiVault / clusterGroup must be mirrored under vp-sscsi-spc in values (Helm subchart scope).
 - name: vp-sscsi-spc
   version: '0.1.*'
   repository: https://charts.validatedpatterns.io
