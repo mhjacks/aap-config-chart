@@ -23,6 +23,16 @@ aapManifest:
       connectTimeoutSeconds: 10
       maxTimeSeconds: 60
 
+# Cluster merged CA bundle in the workload namespace (same pattern as multicloud-gitops charts/all/config-demo:
+# config-demo-vault-tls-ca-configmap.yaml). CNO injects bundleKey into .data after apply; mount on job pods for
+# vaultTlsCheck and keep in sync with SecretProviderClass vaultCACertPath when tls.vaultCACertPath is empty.
+# Cluster chart openshift-sscsi-vault still mounts the same path layout on the Vault CSI *provider* DaemonSet.
+vaultCaBundle:
+  enabled: true
+  configMapName: aap-manifest-vault-tls-ca
+  mountPath: /etc/pki/vault-ca
+  bundleKey: ca-bundle.crt
+
 agof:
   doAutoHubVaultConfig: true
   # When non-empty: ExternalSecret agof-vault-file + mount for agof overlay secrets.

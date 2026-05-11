@@ -1,6 +1,6 @@
 # aap-config
 
-![Version: 0.3.3](https://img.shields.io/badge/Version-0.3.3-informational?style=flat-square)
+![Version: 0.3.4](https://img.shields.io/badge/Version-0.3.4-informational?style=flat-square)
 
 A Helm chart to build and deploy secrets using external-secrets for ansible-edge-gitops
 
@@ -39,6 +39,8 @@ instance integration if desired.
 
 * v0.3.0: **Breaking (CSI)** — Replaced embedded **`openshift-sscsi-vault`** library dependency with **`vp-sscsi-spc`** (Validated Patterns) calling conventions from **multicloud-gitops** `config-demo`: root **`ocpSecretsStoreCsiVault`**, stub **`vp-sscsi-spc`** values to disable bundled output, and **`include "vp_sscsi_spc.secretproviderclass"`** only. TLS CA ConfigMap sync and **`ClusterRoleBinding`** for the CSI provider live in the **cluster** **`openshift-sscsi-vault`** application (e.g. **0.2.***); this chart emits the **SecretProviderClass** only. Pattern **`clusterGroup.applications[applicationKey].ssCsiWorkloadAuth`** (default **`applicationKey: aap-config`**, i.e. auth under the **aap-config** application, not the vault cluster app) supplies workload namespace / SA / role slug; use **`csiWorkloadIdentity`** to synthesize that block. SPC TLS uses **`tls.projectedClusterCa`** (or explicit **`vaultCACertPath`**) aligned with the provider mount.
 
+* v0.3.4: **CSI TLS (config-demo parity)** — Added **`vaultCaBundle`** ConfigMap with **`config.openshift.io/inject-trusted-cabundle`** (empty **`data`** + Argo **`ignoreDifferences`**) and projected mount on config job pods, matching **multicloud-gitops** `charts/all/config-demo`. When **`vaultCaBundle.enabled`** and **`tls.vaultCACertPath`** are empty, the SecretProviderClass gets **`vaultCACertPath`** set to **`vaultCaBundle.mountPath`**/**`vaultCaBundle.bundleKey`** (default **`/etc/pki/vault-ca/ca-bundle.crt`**). **`vaultTlsCheck`** uses the same path when the bundle is enabled.
+
 * v0.3.3: **CSI TLS** — Default **`ocpSecretsStoreCsiVault.tls.projectedClusterCa.enabled`** is **`false`** so the SecretProviderClass does not reference **`/etc/pki/vault-ca/ca-bundle.crt`** unless the cluster mounts that bundle on the Vault CSI provider (for example via **`openshift-sscsi-vault`**). Set **`enabled: true`** when that path exists, or set **`tls.vaultCACertPath`** to a PEM path on the provider pod, or (lab only) **`tls.vaultSkipTLSVerify: "true"`**.
 
 * v0.3.2: **CSI** — SecretProviderClass is always rendered by **`templates/aap-manifest-vault-csi.yaml`** using **`include "vp_sscsi_spc.secretproviderclass"`** (so **`csiWorkloadIdentity`** synthesis always applies). The **`vp-sscsi-spc`** dependency keeps **`secretProviderClass.installDefaultManifests: false`** to avoid duplicate SPCs. Any future bundled manifests from **`vp-sscsi-spc`** remain available if you opt in under **`vp-sscsi-spc`** values.
@@ -47,9 +49,9 @@ instance integration if desired.
 
 ### Vault CSI manifest (`aapManifest.csi`)
 
-When **`aapManifest.csi.enabled`** is true, this chart depends on **`vp-sscsi-spc`** for the **`vp_sscsi_spc.secretproviderclass`** named template and renders the **SecretProviderClass** from **`templates/aap-manifest-vault-csi.yaml`** (so **`csiWorkloadIdentity`** and TLS normalization always apply). Keep **`vp-sscsi-spc.ocpSecretsStoreCsiVault.secretProviderClass.installDefaultManifests`** at **`false`** so the dependency does not emit a second SPC; opt in there only if you intentionally want bundled manifests from **`vp-sscsi-spc`**. Configure **`objects`**, **`tls`**, **`auth`**, and **`secretProviderClass`** on root **`ocpSecretsStoreCsiVault`**. **`vp-sscsi-spc.clusterGroup`** aliases root **`clusterGroup`** for any subchart-scoped lookups. Deploy the cluster **`openshift-sscsi-vault`** chart separately so the Vault CSI DaemonSet mounts the TLS CA bundle (**ConfigMap** sync for the provider) and token-review RBAC exists. Optional init **`aap-manifest-vault-tls-check`** probes Vault HTTPS when TLS verify is on.
+**CSI mount error** `open /etc/pki/vault-ca/ca-bundle.crt: no such file or directory`: the Vault CSI provider loads the PEM from **`vaultCACertPath`** in the SecretProviderClass. With **`vaultCaBundle.enabled: true`** (default) the chart emits a **namespace** ConfigMap and sets **`vaultCACertPath`** to **`vaultCaBundle.mountPath`/`vaultCaBundle.bundleKey`** (same pattern as **multicloud-gitops** `config-demo`). The **provider** DaemonSet must still expose that path (typically **`openshift-sscsi-vault`**). If you disable **`vaultCaBundle`**, set **`tls.vaultCACertPath`** explicitly or **`tls.vaultSkipTLSVerify: "true"`** (lab only).
 
-**CSI mount error** `open /etc/pki/vault-ca/ca-bundle.crt: no such file or directory`: the Vault CSI provider loads the PEM from **`vaultCACertPath`** in the SecretProviderClass. With **`tls.projectedClusterCa.enabled: true`** and empty **`tls.vaultCACertPath`**, that path defaults to the projected cluster bundle (same layout as **`openshift-sscsi-vault`**). Enable **`projectedClusterCa`** only after the provider pod has that file, or set **`tls.vaultCACertPath`** to a path that exists on the provider, or use **`tls.vaultSkipTLSVerify: "true"`** only where appropriate.
+When **`aapManifest.csi.enabled`** is true, this chart depends on **`vp-sscsi-spc`** for the **`vp_sscsi_spc.secretproviderclass`** named template and renders the **SecretProviderClass** from **`templates/aap-manifest-vault-csi.yaml`** (so **`csiWorkloadIdentity`** and TLS normalization always apply). Keep **`vp-sscsi-spc.ocpSecretsStoreCsiVault.secretProviderClass.installDefaultManifests`** at **`false`** so the dependency does not emit a second SPC; opt in there only if you intentionally want bundled manifests from **`vp-sscsi-spc`**. Configure **`objects`**, **`tls`**, **`auth`**, and **`secretProviderClass`** on root **`ocpSecretsStoreCsiVault`**. **`vp-sscsi-spc.clusterGroup`** aliases root **`clusterGroup`** for any subchart-scoped lookups. Deploy the cluster **`openshift-sscsi-vault`** chart separately so the Vault CSI DaemonSet mounts the TLS CA bundle (**ConfigMap** sync for the provider) and token-review RBAC exists. Optional init **`aap-manifest-vault-tls-check`** probes Vault HTTPS when TLS verify is on.
 
 ### VP-Secrets-v2
 
@@ -168,6 +170,10 @@ secrets:
 | serviceAccountNamespace | string | `"aap-config"` |  |
 | validationJob.activeDeadlineSeconds | int | `3600` |  |
 | validationJob.disabled | bool | `false` |  |
+| vaultCaBundle.bundleKey | string | `"ca-bundle.crt"` |  |
+| vaultCaBundle.configMapName | string | `"aap-manifest-vault-tls-ca"` |  |
+| vaultCaBundle.enabled | bool | `true` |  |
+| vaultCaBundle.mountPath | string | `"/etc/pki/vault-ca"` |  |
 | vp-rbac.clusterRoles.view-routes.rules[0].apiGroups[0] | string | `"route.openshift.io"` |  |
 | vp-rbac.clusterRoles.view-routes.rules[0].resources[0] | string | `"routes"` |  |
 | vp-rbac.clusterRoles.view-routes.rules[0].verbs[0] | string | `"get"` |  |

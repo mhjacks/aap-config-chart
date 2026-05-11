@@ -44,6 +44,18 @@
 {{- $tls := $oci.tls | default dict }}
 {{- $nSkip := trim (include "aap-config.normalizeVaultSkipTLSVerify" (dict "v" (index $tls "vaultSkipTLSVerify"))) }}
 {{- $_ := set $vals "ocpSecretsStoreCsiVault" (mergeOverwrite $oci (dict "tls" (mergeOverwrite $tls (dict "vaultSkipTLSVerify" $nSkip)))) }}
+{{- $vcb := $.Values.vaultCaBundle | default dict }}
+{{- if and (eq (include "aap-config.manifestCsiEnabled" $) "true") (eq true (default false (index $vcb "enabled"))) }}
+{{- $m := $vcb.mountPath | default "/etc/pki/vault-ca" | trim | trimSuffix "/" }}
+{{- $bk := $vcb.bundleKey | default "ca-bundle.crt" | trim }}
+{{- $autoCa := printf "%s/%s" $m $bk }}
+{{- $oci2 := index $vals "ocpSecretsStoreCsiVault" | default dict }}
+{{- $tls2 := $oci2.tls | default dict }}
+{{- $existingCa := $tls2.vaultCACertPath | default "" | trim }}
+{{- if eq $existingCa "" }}
+{{- $_ := set $vals "ocpSecretsStoreCsiVault" (mergeOverwrite $oci2 (dict "tls" (mergeOverwrite $tls2 (dict "vaultCACertPath" $autoCa)))) }}
+{{- end }}
+{{- end }}
 {{- $sub := index $.Subcharts "vp-sscsi-spc" }}
 {{- $ctx := dict "Chart" $sub.Chart "Capabilities" $.Capabilities "Release" $.Release "Template" $sub.Template "Values" $vals }}
 {{- $spc := include "vp_sscsi_spc.secretproviderclass" $ctx | trim }}

@@ -2,6 +2,20 @@
 {{- if and $.Values.aapManifest.csi $.Values.aapManifest.csi.enabled }}true{{- else -}}false{{- end -}}
 {{- end }}
 
+{{- define "aap-config.vaultCaBundleEnabled" -}}
+{{- if and (eq (include "aap-config.manifestCsiEnabled" $) "true") (eq true (default false (index ($.Values.vaultCaBundle | default dict) "enabled"))) }}true{{- else -}}false{{- end -}}
+{{- end }}
+
+{{- define "aap-config.effectiveVaultTlsCheckCaPath" -}}
+{{- if eq (include "aap-config.vaultCaBundleEnabled" $) "true" -}}
+{{- $vcb := $.Values.vaultCaBundle | default dict -}}
+{{- printf "%s/%s" ($vcb.mountPath | default "/etc/pki/vault-ca" | trim | trimSuffix "/") ($vcb.bundleKey | default "ca-bundle.crt" | trim) -}}
+{{- else -}}
+{{- $vtcjob := index $.Values.aapManifest.csi "vaultTlsCheck" | default dict -}}
+{{- index $vtcjob "caBundlePath" | default "/etc/pki/tls/certs/ca-bundle.crt" | trim -}}
+{{- end -}}
+{{- end }}
+
 {{/*
 Normalize tls.vaultSkipTLSVerify to the strings "true" or "false" for Vault CSI (same idea as vp-sscsi-spc).
 Accepts bool, string, or empty/nil (defaults to false). Do not use sprig "default" with booleans — false is treated as empty.
@@ -108,6 +122,18 @@ volumes:
       volumeAttributes:
         secretProviderClass: {{ $.Values.aapManifest.csi.secretProviderClassName | quote }}
 {{- end }}
+{{- if eq (include "aap-config.vaultCaBundleEnabled" $) "true" }}
+  - name: vault-tls-ca
+    projected:
+      defaultMode: 420
+      sources:
+        - configMap:
+            name: {{ $.Values.vaultCaBundle.configMapName | quote }}
+            optional: false
+            items:
+              - key: {{ $.Values.vaultCaBundle.bundleKey | quote }}
+                path: {{ $.Values.vaultCaBundle.bundleKey | quote }}
+{{- end }}
 initContainers:
 {{- if eq (include "aap-config.manifestCsiVaultTlsCheckEnabled" $) "true" }}
 {{- $vtcjob := index $.Values.aapManifest.csi "vaultTlsCheck" | default dict }}
@@ -121,7 +147,7 @@ initContainers:
           set -euo pipefail
           url={{ include "aap-config.effectiveCsiVaultHttpsBase" $ | quote }}
           health="${url%/}/v1/sys/health"
-          ca={{ $vtcjob.caBundlePath | default "/etc/pki/tls/certs/ca-bundle.crt" | quote }}
+          ca={{ include "aap-config.effectiveVaultTlsCheckCaPath" $ | quote }}
           ct={{ $vtcjob.connectTimeoutSeconds | default 10 | int }}
           mt={{ $vtcjob.maxTimeSeconds | default 60 | int }}
           # No curl -f: Vault may return 503 (sealed) etc.; we only require TLS + HTTP response.
@@ -133,6 +159,12 @@ initContainers:
           fi
           echo "vaultTlsCheck: GET $health" >&2
           curl "${args[@]}" "$health" -o /dev/null
+    {{- if eq (include "aap-config.vaultCaBundleEnabled" $) "true" }}
+    volumeMounts:
+      - name: vault-tls-ca
+        mountPath: {{ $.Values.vaultCaBundle.mountPath | default "/etc/pki/vault-ca" | quote }}
+        readOnly: true
+    {{- end }}
 {{- end }}
   - name: agof-init
     image: {{ .Values.configJob.image }}
@@ -278,6 +310,11 @@ initContainers:
         mountPath: {{ $.Values.aapManifest.csi.mountPath | quote }}
         readOnly: true
 {{- end }}
+{{- if eq (include "aap-config.vaultCaBundleEnabled" $) "true" }}
+      - name: vault-tls-ca
+        mountPath: {{ $.Values.vaultCaBundle.mountPath | default "/etc/pki/vault-ca" | quote }}
+        readOnly: true
+{{- end }}
 containers:
   - name: agof-config
     image: {{ .Values.configJob.image }}
@@ -303,6 +340,11 @@ containers:
 {{- if eq (include "aap-config.manifestCsiEnabled" $) "true" }}
       - name: aap-manifest-csi
         mountPath: {{ $.Values.aapManifest.csi.mountPath | quote }}
+        readOnly: true
+{{- end }}
+{{- if eq (include "aap-config.vaultCaBundleEnabled" $) "true" }}
+      - name: vault-tls-ca
+        mountPath: {{ $.Values.vaultCaBundle.mountPath | default "/etc/pki/vault-ca" | quote }}
         readOnly: true
 {{- end }}
 {{- end }} {{/* aap-config.app.configjobspec */}}
