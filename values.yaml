@@ -107,9 +107,11 @@ ocpSecretsStoreCsiVault:
     # Non-empty wins over projectedClusterCa. Align with openshift-sscsi-vault sync mount on the CSI provider pod.
     vaultCACertPath: ""
     vaultTLSServerName: ""
-    # When enabled and vaultCACertPath is empty, SPC vaultCACertPath matches openshift-sscsi-vault defaults (CNO bundle path).
+    # When enabled and vaultCACertPath is empty, SPC vaultCACertPath is set to the projected bundle path below.
+    # That path must exist on the Vault CSI *provider* DaemonSet (typically from cluster chart openshift-sscsi-vault).
+    # Leave disabled unless that mount is present; otherwise mounts fail with "open .../ca-bundle.crt: no such file".
     projectedClusterCa:
-      enabled: true
+      enabled: false
       mountDir: "/etc/pki/vault-ca"
       injectTrustedCabundle: true
       trustedCabundleDataKey: "ca-bundle.crt"
