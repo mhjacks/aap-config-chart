@@ -280,10 +280,10 @@ secrets:
 |-----|------|---------|-------------|
 | aapManifest.key | string | `"secret/data/hub/aap-manifest"` |  |
 | agof.agof_repo | string | `"https://github.com/validatedpatterns/agof.git"` |  |
-| agof.agof_revision | string | `"main"` |  |
+| agof.agof_revision | string | `"v2"` |  |
 | agof.automationHubTokenKey | string | `"secret/data/hub/automation-hub-token"` |  |
 | agof.cac_repo | string | `"https://github.com/validatedpatterns-demos/ansible-edge-gitops-hmi-config-as-code.git"` |  |
-| agof.cac_revision | string | `"v2"` |  |
+| agof.cac_revision | string | `"main"` |  |
 | agof.doAutoHubVaultConfig | bool | `true` |  |
 | agof.extraPlaybookOpts | string | `""` |  |
 | agof.gitAuthHttpsStyle | string | `"auto"` |  |

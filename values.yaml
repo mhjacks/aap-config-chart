@@ -16,7 +16,7 @@ agof:
   extraPlaybookOpts: ''
 
   agof_repo: https://github.com/validatedpatterns/agof.git
-  agof_revision: main
+  agof_revision: v2
   # Optional: name of an existing Secret (same namespace) whose keys are mounted for
   # git in the agof-init container (clone agof_repo) and the agof-config container
   # (e.g. clone/fetch the config-as-code repo during make). Use one of:
@@ -39,7 +39,7 @@ agof:
   # Config-as-code repository checked out during configure_aap (cac_* preferred; legacy
   # iac_* is merged into cac_* when cac_* is empty or still at chart defaults)
   cac_repo: https://github.com/validatedpatterns-demos/ansible-edge-gitops-hmi-config-as-code.git
-  cac_revision: v2
+  cac_revision: main
   iac_repo: ''
   iac_revision: ''
 
