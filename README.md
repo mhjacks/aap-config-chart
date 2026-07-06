@@ -1,6 +1,6 @@
 # aap-config
 
-![Version: 0.2.4](https://img.shields.io/badge/Version-0.2.4-informational?style=flat-square)
+![Version: 0.2.5](https://img.shields.io/badge/Version-0.2.5-informational?style=flat-square)
 
 A Helm chart to build and deploy secrets using external-secrets for ansible-edge-gitops
 
@@ -41,14 +41,14 @@ into `cac_*` (and mirrors the result back to `iac_*` for current AGOF releases
 that still read those keys). Requires a compatible AGOF revision (see agof
 README OpenShift section).
 
-* v0.2.5: Fix `helm-values` ConfigMap resolution so `cac_repo` / `cac_revision`
-are the canonical fields. Legacy `iac_*` values merge into `cac_*` when `cac_*`
-is unset; when both are set, `cac_*` wins.
-
 * v0.2.4: Add `agof.gitHttpsSslVerify` to disable TLS verification for HTTPS
 git operations when `agof_repo` or the config-as-code repo uses an untrusted or
 private CA (lab use only). Applies to the init-container AGOF clone and is passed
 through to AGOF for the config-as-code checkout.
+
+* v0.2.5: Fix `helm-values` ConfigMap resolution so `cac_repo` / `cac_revision`
+are the canonical fields. Legacy `iac_*` values merge into `cac_*` when `cac_*`
+is unset; when both are set, `cac_*` wins.
 
 ### Git authentication secret (`agof.gitAuthSecret`)
 
