@@ -1,3 +1,11 @@
+{{- define "aap-config.agof.configRepo" -}}
+{{- .Values.agof.cac_repo | default .Values.agof.iac_repo -}}
+{{- end -}}
+
+{{- define "aap-config.agof.configRevision" -}}
+{{- .Values.agof.cac_revision | default .Values.agof.iac_revision -}}
+{{- end -}}
+
 {{- define "aap-config.app.configjobspec" -}}
 restartPolicy: Never
 serviceAccountName: {{ $.Values.serviceAccountName }}
@@ -30,7 +38,7 @@ initContainers:
           set -euo pipefail
           export GIT_TERMINAL_PROMPT=0
           agof_repo_url={{ $.Values.agof.agof_repo | quote }}
-          config_repo_url={{ $.Values.agof.cac_repo | default $.Values.agof.iac_repo | quote }}
+          config_repo_url={{ include "aap-config.agof.configRepo" $ | quote }}
 {{- if $.Values.agof.vaultFileKey }}
           base64 -d /pattern-home/agof-vault-file/agof-vault-file > ~/agof_vault.yml
 {{- else }}

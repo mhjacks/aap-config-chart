@@ -1,4 +1,13 @@
-{{- $valuesyaml := toYaml $.Values -}} # E: syntax error: expected '<document start>', but found '{'
+{{- $values := deepCopy $.Values -}}
+{{- if $values.agof -}}
+{{- $configRepo := include "aap-config.agof.configRepo" $ -}}
+{{- $configRevision := include "aap-config.agof.configRevision" $ -}}
+{{- $_ := set $values.agof "cac_repo" $configRepo -}}
+{{- $_ := set $values.agof "cac_revision" $configRevision -}}
+{{- $_ := set $values.agof "iac_repo" $configRepo -}}
+{{- $_ := set $values.agof "iac_revision" $configRevision -}}
+{{- end -}}
+{{- $valuesyaml := toYaml $values -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
