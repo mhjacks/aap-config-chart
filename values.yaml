@@ -37,7 +37,7 @@ agof:
   gitHttpsSslVerify: true
 
   # Config-as-code repository checked out during configure_aap (cac_* preferred; legacy
-  # iac_* is merged into cac_* when writing the helm-values ConfigMap)
+  # iac_* is merged into cac_* when cac_* is empty or still at chart defaults)
   cac_repo: https://github.com/validatedpatterns-demos/ansible-edge-gitops-hmi-config-as-code.git
   cac_revision: v2
   iac_repo: ''

@@ -49,7 +49,8 @@ through to AGOF for the config-as-code checkout.
 
 * v0.2.5: Fix `helm-values` ConfigMap resolution so `cac_repo` / `cac_revision`
 are the canonical fields. Legacy `iac_*` values merge into `cac_*` when `cac_*`
-is unset; when both are set, `cac_*` wins.
+is unset or left at chart defaults; when `cac_*` is explicitly set, it wins over
+`iac_*`.
 
 ### Git authentication secret (`agof.gitAuthSecret`)
 

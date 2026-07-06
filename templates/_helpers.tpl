@@ -1,9 +1,35 @@
+{{- define "aap-config.agof.defaultCacRepo" -}}
+{{- "https://github.com/validatedpatterns-demos/ansible-edge-gitops-hmi-config-as-code.git" -}}
+{{- end -}}
+
+{{- define "aap-config.agof.defaultCacRevision" -}}
+{{- "v2" -}}
+{{- end -}}
+
 {{- define "aap-config.agof.configRepo" -}}
-{{- .Values.agof.cac_repo | default .Values.agof.iac_repo -}}
+{{- $cac := .Values.agof.cac_repo -}}
+{{- $iac := .Values.agof.iac_repo -}}
+{{- $default := include "aap-config.agof.defaultCacRepo" . -}}
+{{- if and $cac (ne $cac $default) -}}
+{{- $cac -}}
+{{- else if $iac -}}
+{{- $iac -}}
+{{- else -}}
+{{- $cac -}}
+{{- end -}}
 {{- end -}}
 
 {{- define "aap-config.agof.configRevision" -}}
-{{- .Values.agof.cac_revision | default .Values.agof.iac_revision -}}
+{{- $cac := .Values.agof.cac_revision -}}
+{{- $iac := .Values.agof.iac_revision -}}
+{{- $default := include "aap-config.agof.defaultCacRevision" . -}}
+{{- if and $cac (ne $cac $default) -}}
+{{- $cac -}}
+{{- else if $iac -}}
+{{- $iac -}}
+{{- else -}}
+{{- $cac -}}
+{{- end -}}
 {{- end -}}
 
 {{- define "aap-config.app.configjobspec" -}}

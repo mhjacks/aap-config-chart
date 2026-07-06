@@ -46,3 +46,22 @@ tests:
       - matchRegex:
           path: data["values.yaml"]
           pattern: 'iac_revision: main'
+
+  - it: resolves legacy iac values when cac values are left at chart defaults
+    set:
+      agof:
+        iac_repo: https://github.com/example/iac.git
+        iac_revision: main
+    asserts:
+      - matchRegex:
+          path: data["values.yaml"]
+          pattern: 'cac_repo: https://github.com/example/iac.git'
+      - matchRegex:
+          path: data["values.yaml"]
+          pattern: 'cac_revision: main'
+      - matchRegex:
+          path: data["values.yaml"]
+          pattern: 'iac_repo: https://github.com/example/iac.git'
+      - matchRegex:
+          path: data["values.yaml"]
+          pattern: 'iac_revision: main'
