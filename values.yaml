@@ -36,11 +36,12 @@ agof:
   # Set to false when agof_repo or the config-as-code repo uses a private CA (lab use only).
   gitHttpsSslVerify: true
 
-  # Config-as-code repository checked out during configure_aap (cac_* preferred over iac_*)
-  cac_repo: ''
-  cac_revision: ''
-  iac_repo: https://github.com/validatedpatterns-demos/ansible-edge-gitops-hmi-config-as-code.git
-  iac_revision: main
+  # Config-as-code repository checked out during configure_aap (cac_* preferred; legacy
+  # iac_* is merged into cac_* when cac_* is empty or still at chart defaults)
+  cac_repo: https://github.com/validatedpatterns-demos/ansible-edge-gitops-hmi-config-as-code.git
+  cac_revision: main
+  iac_repo: ''
+  iac_revision: ''
 
 configJob:
   image: quay.io/hybridcloudpatterns/imperative-container:v1

@@ -1,6 +1,6 @@
 # aap-config
 
-![Version: 0.2.4](https://img.shields.io/badge/Version-0.2.4-informational?style=flat-square)
+![Version: 0.2.5](https://img.shields.io/badge/Version-0.2.5-informational?style=flat-square)
 
 A Helm chart to build and deploy secrets using external-secrets for ansible-edge-gitops
 
@@ -36,13 +36,20 @@ instance integration if desired.
 * v0.2.3: Align with AGOF config-as-code naming and git authentication. Add
 `agof.cac_repo` / `agof.cac_revision` (preferred over legacy `iac_repo` /
 `iac_revision`). Git credential injection in init now covers both AGOF and the
-config-as-code repo URL. Requires a compatible AGOF revision (see agof README
-OpenShift section).
+config-as-code repo URL. The `helm-values` ConfigMap resolves legacy `iac_*`
+into `cac_*` (and mirrors the result back to `iac_*` for current AGOF releases
+that still read those keys). Requires a compatible AGOF revision (see agof
+README OpenShift section).
 
 * v0.2.4: Add `agof.gitHttpsSslVerify` to disable TLS verification for HTTPS
 git operations when `agof_repo` or the config-as-code repo uses an untrusted or
 private CA (lab use only). Applies to the init-container AGOF clone and is passed
 through to AGOF for the config-as-code checkout.
+
+* v0.2.5: Fix `helm-values` ConfigMap resolution so `cac_repo` / `cac_revision`
+are the canonical fields. Legacy `iac_*` values merge into `cac_*` when `cac_*`
+is unset or left at chart defaults; when `cac_*` is explicitly set, it wins over
+`iac_*`.
 
 ### Git authentication secret (`agof.gitAuthSecret`)
 
@@ -275,16 +282,16 @@ secrets:
 | agof.agof_repo | string | `"https://github.com/validatedpatterns/agof.git"` |  |
 | agof.agof_revision | string | `"v2"` |  |
 | agof.automationHubTokenKey | string | `"secret/data/hub/automation-hub-token"` |  |
-| agof.cac_repo | string | `""` |  |
-| agof.cac_revision | string | `""` |  |
+| agof.cac_repo | string | `"https://github.com/validatedpatterns-demos/ansible-edge-gitops-hmi-config-as-code.git"` |  |
+| agof.cac_revision | string | `"main"` |  |
 | agof.doAutoHubVaultConfig | bool | `true` |  |
 | agof.extraPlaybookOpts | string | `""` |  |
 | agof.gitAuthHttpsStyle | string | `"auto"` |  |
 | agof.gitAuthSecret | string | `""` |  |
 | agof.gitAuthVaultKey | string | `""` |  |
 | agof.gitHttpsSslVerify | bool | `true` |  |
-| agof.iac_repo | string | `"https://github.com/validatedpatterns-demos/ansible-edge-gitops-hmi-config-as-code.git"` |  |
-| agof.iac_revision | string | `"main"` |  |
+| agof.iac_repo | string | `""` |  |
+| agof.iac_revision | string | `""` |  |
 | agof.vaultFileKey | string | `""` |  |
 | configJob.activeDeadlineSeconds | int | `3600` |  |
 | configJob.configTimeout | int | `1800` |  |

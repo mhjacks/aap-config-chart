@@ -1,3 +1,37 @@
+{{- define "aap-config.agof.defaultCacRepo" -}}
+{{- "https://github.com/validatedpatterns-demos/ansible-edge-gitops-hmi-config-as-code.git" -}}
+{{- end -}}
+
+{{- define "aap-config.agof.defaultCacRevision" -}}
+{{- "v2" -}}
+{{- end -}}
+
+{{- define "aap-config.agof.configRepo" -}}
+{{- $cac := .Values.agof.cac_repo -}}
+{{- $iac := .Values.agof.iac_repo -}}
+{{- $default := include "aap-config.agof.defaultCacRepo" . -}}
+{{- if and $cac (ne $cac $default) -}}
+{{- $cac -}}
+{{- else if $iac -}}
+{{- $iac -}}
+{{- else -}}
+{{- $cac -}}
+{{- end -}}
+{{- end -}}
+
+{{- define "aap-config.agof.configRevision" -}}
+{{- $cac := .Values.agof.cac_revision -}}
+{{- $iac := .Values.agof.iac_revision -}}
+{{- $default := include "aap-config.agof.defaultCacRevision" . -}}
+{{- if and $cac (ne $cac $default) -}}
+{{- $cac -}}
+{{- else if $iac -}}
+{{- $iac -}}
+{{- else -}}
+{{- $cac -}}
+{{- end -}}
+{{- end -}}
+
 {{- define "aap-config.app.configjobspec" -}}
 restartPolicy: Never
 serviceAccountName: {{ $.Values.serviceAccountName }}
@@ -30,7 +64,7 @@ initContainers:
           set -euo pipefail
           export GIT_TERMINAL_PROMPT=0
           agof_repo_url={{ $.Values.agof.agof_repo | quote }}
-          config_repo_url={{ $.Values.agof.cac_repo | default $.Values.agof.iac_repo | quote }}
+          config_repo_url={{ include "aap-config.agof.configRepo" $ | quote }}
 {{- if $.Values.agof.vaultFileKey }}
           base64 -d /pattern-home/agof-vault-file/agof-vault-file > ~/agof_vault.yml
 {{- else }}

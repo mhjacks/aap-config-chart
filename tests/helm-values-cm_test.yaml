@@ -1,0 +1,67 @@
+---
+suite: helm-values ConfigMap
+templates:
+  - helm-values-cm.yaml
+tests:
+  - it: prefers cac_repo and cac_revision and mirrors them for legacy AGOF fields
+    set:
+      agof:
+        cac_repo: https://github.com/example/cac.git
+        cac_revision: v21_to_be
+        iac_repo: https://github.com/example/iac.git
+        iac_revision: main
+    asserts:
+      - isKind:
+          of: ConfigMap
+      - matchRegex:
+          path: data["values.yaml"]
+          pattern: 'cac_repo: https://github.com/example/cac.git'
+      - matchRegex:
+          path: data["values.yaml"]
+          pattern: 'cac_revision: v21_to_be'
+      - matchRegex:
+          path: data["values.yaml"]
+          pattern: 'iac_repo: https://github.com/example/cac.git'
+      - matchRegex:
+          path: data["values.yaml"]
+          pattern: 'iac_revision: v21_to_be'
+
+  - it: resolves legacy iac values into cac fields when cac values are empty
+    set:
+      agof:
+        cac_repo: ""
+        cac_revision: ""
+        iac_repo: https://github.com/example/iac.git
+        iac_revision: main
+    asserts:
+      - matchRegex:
+          path: data["values.yaml"]
+          pattern: 'cac_repo: https://github.com/example/iac.git'
+      - matchRegex:
+          path: data["values.yaml"]
+          pattern: 'cac_revision: main'
+      - matchRegex:
+          path: data["values.yaml"]
+          pattern: 'iac_repo: https://github.com/example/iac.git'
+      - matchRegex:
+          path: data["values.yaml"]
+          pattern: 'iac_revision: main'
+
+  - it: resolves legacy iac values when cac values are left at chart defaults
+    set:
+      agof:
+        iac_repo: https://github.com/example/iac.git
+        iac_revision: main
+    asserts:
+      - matchRegex:
+          path: data["values.yaml"]
+          pattern: 'cac_repo: https://github.com/example/iac.git'
+      - matchRegex:
+          path: data["values.yaml"]
+          pattern: 'cac_revision: main'
+      - matchRegex:
+          path: data["values.yaml"]
+          pattern: 'iac_repo: https://github.com/example/iac.git'
+      - matchRegex:
+          path: data["values.yaml"]
+          pattern: 'iac_revision: main'
