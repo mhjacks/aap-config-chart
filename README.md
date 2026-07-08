@@ -1,6 +1,6 @@
 # aap-config
 
-![Version: 0.2.5](https://img.shields.io/badge/Version-0.2.5-informational?style=flat-square)
+![Version: 0.2.6](https://img.shields.io/badge/Version-0.2.6-informational?style=flat-square)
 
 A Helm chart to build and deploy secrets using external-secrets for ansible-edge-gitops
 
@@ -50,6 +50,8 @@ through to AGOF for the config-as-code checkout.
 are the canonical fields. Legacy `iac_*` values merge into `cac_*` when `cac_*`
 is unset or left at chart defaults; when `cac_*` is explicitly set, it wins over
 `iac_*`.
+
+* v0.2.6: Track v3 of AGOF by default
 
 ### Git authentication secret (`agof.gitAuthSecret`)
 
@@ -280,7 +282,7 @@ secrets:
 |-----|------|---------|-------------|
 | aapManifest.key | string | `"secret/data/hub/aap-manifest"` |  |
 | agof.agof_repo | string | `"https://github.com/validatedpatterns/agof.git"` |  |
-| agof.agof_revision | string | `"v2"` |  |
+| agof.agof_revision | string | `"v3"` |  |
 | agof.automationHubTokenKey | string | `"secret/data/hub/automation-hub-token"` |  |
 | agof.cac_repo | string | `"https://github.com/validatedpatterns-demos/ansible-edge-gitops-hmi-config-as-code.git"` |  |
 | agof.cac_revision | string | `"main"` |  |
