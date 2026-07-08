@@ -16,7 +16,7 @@ agof:
   extraPlaybookOpts: ''
 
   agof_repo: https://github.com/validatedpatterns/agof.git
-  agof_revision: v2
+  agof_revision: v3
   # Optional: name of an existing Secret (same namespace) whose keys are mounted for
   # git in the agof-init container (clone agof_repo) and the agof-config container
   # (e.g. clone/fetch the config-as-code repo during make). Use one of:
