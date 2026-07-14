@@ -295,7 +295,8 @@ secrets:
 | agof.iac_repo | string | `""` |  |
 | agof.iac_revision | string | `""` |  |
 | agof.vaultFileKey | string | `""` |  |
-| configJob.activeDeadlineSeconds | int | `3600` |  |
+| configJob.activeDeadlineSeconds | int | `600` |  |
+| configJob.backoffLimit | int | `20` |  |
 | configJob.configTimeout | int | `1800` |  |
 | configJob.image | string | `"quay.io/hybridcloudpatterns/imperative-container:v1"` |  |
 | configJob.imagePullPolicy | string | `"Always"` |  |
