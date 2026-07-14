@@ -5,7 +5,7 @@ kind: Job
 metadata:
   name: agof-config-bootstrap-job
   annotations:
-    argocd.argoproj.io/sync-wave: "2"
+    argocd.argoproj.io/sync-wave: "3"
 spec:
   parallelism: 1
   completions: 1

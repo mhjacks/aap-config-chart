@@ -56,7 +56,9 @@ is unset or left at chart defaults; when `cac_*` is explicitly set, it wins over
 
 * v0.2.7: Reconfigure external secrets validation retries. Add configurable
 `validationJob.backoffLimit` (default 20) and reduce `validationJob.activeDeadlineSeconds`
-to 600 (10 min) so slow ESO sync gets more frequent job-level retries.
+to 600 (10 min). Run the validation job as an Argo Sync hook at sync-wave 2 with
+`HookSucceeded,BeforeHookCreation` so ExternalSecrets apply in wave 1 before
+validation runs and each sync retry gets a fresh job without OutOfSync drift.
 
 ### Git authentication secret (`agof.gitAuthSecret`)
 
