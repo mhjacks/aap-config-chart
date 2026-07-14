@@ -54,6 +54,9 @@ is unset or left at chart defaults; when `cac_*` is explicitly set, it wins over
 
 * v0.2.6: Track v3 of AGOF by default
 
+* v0.2.7: Reconfigure how retries are done. Include configurable backoffLimit (default
+20) and reduce activeDeadline seconds to 600 (10 min).
+
 ### Git authentication secret (`agof.gitAuthSecret`)
 
 When `agof_repo` or the config-as-code repo (`agof.cac_repo` / `agof.iac_repo`) is

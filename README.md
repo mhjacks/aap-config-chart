@@ -1,6 +1,6 @@
 # aap-config
 
-![Version: 0.2.6](https://img.shields.io/badge/Version-0.2.6-informational?style=flat-square)
+![Version: 0.2.7](https://img.shields.io/badge/Version-0.2.7-informational?style=flat-square)
 
 A Helm chart to build and deploy secrets using external-secrets for ansible-edge-gitops
 
@@ -52,6 +52,9 @@ is unset or left at chart defaults; when `cac_*` is explicitly set, it wins over
 `iac_*`.
 
 * v0.2.6: Track v3 of AGOF by default
+
+* v0.2.7: Reconfigure how retries are done. Include configurable backoffLimit (default
+20) and reduce activeDeadline seconds to 600 (10 min).
 
 ### Git authentication secret (`agof.gitAuthSecret`)
 
