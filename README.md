@@ -53,8 +53,9 @@ is unset or left at chart defaults; when `cac_*` is explicitly set, it wins over
 
 * v0.2.6: Track v3 of AGOF by default
 
-* v0.2.7: Reconfigure how retries are done. Include configurable backoffLimit (default
-20) and reduce activeDeadline seconds to 600 (10 min).
+* v0.2.7: Reconfigure external secrets validation retries. Add configurable
+`validationJob.backoffLimit` (default 20) and reduce `validationJob.activeDeadlineSeconds`
+to 600 (10 min) so slow ESO sync gets more frequent job-level retries.
 
 ### Git authentication secret (`agof.gitAuthSecret`)
 
@@ -298,8 +299,7 @@ secrets:
 | agof.iac_repo | string | `""` |  |
 | agof.iac_revision | string | `""` |  |
 | agof.vaultFileKey | string | `""` |  |
-| configJob.activeDeadlineSeconds | int | `600` |  |
-| configJob.backoffLimit | int | `20` |  |
+| configJob.activeDeadlineSeconds | int | `3600` |  |
 | configJob.configTimeout | int | `1800` |  |
 | configJob.image | string | `"quay.io/hybridcloudpatterns/imperative-container:v1"` |  |
 | configJob.imagePullPolicy | string | `"Always"` |  |
@@ -308,7 +308,8 @@ secrets:
 | secretStore.name | string | `"vault-backend"` |  |
 | serviceAccountName | string | `"aap-config-sa"` |  |
 | serviceAccountNamespace | string | `"aap-config"` |  |
-| validationJob.activeDeadlineSeconds | int | `3600` |  |
+| validationJob.activeDeadlineSeconds | int | `600` |  |
+| validationJob.backoffLimit | int | `20` |  |
 | validationJob.disabled | bool | `false` |  |
 | vp-rbac.clusterRoles.view-routes.rules[0].apiGroups[0] | string | `"route.openshift.io"` |  |
 | vp-rbac.clusterRoles.view-routes.rules[0].resources[0] | string | `"routes"` |  |
