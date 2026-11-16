@@ -1,0 +1,91 @@
+suite: Test jobs are drain-cancelable
+templates:
+  - templates/external-secrets-validation-job.yaml
+  - templates/agof-config-bootstrap-job.yaml
+  - templates/agof-config-cronjob.yaml
+release:
+  name: release-test
+tests:
+  - it: Validation job ignores drain evictions and exit 143
+    template: templates/external-secrets-validation-job.yaml
+    asserts:
+      # Drain evictions are ignored, not counted as failures
+      - equal:
+          path: spec.podFailurePolicy.rules[0].action
+          value: Ignore
+      - equal:
+          path: spec.podFailurePolicy.rules[0].onExitCodes.containerName
+          value: secrets-validator
+      - equal:
+          path: spec.podFailurePolicy.rules[0].onExitCodes.operator
+          value: In
+      - equal:
+          path: spec.podFailurePolicy.rules[0].onExitCodes.values
+          value: [143]
+      - equal:
+          path: spec.podFailurePolicy.rules[1].action
+          value: Ignore
+      - equal:
+          path: spec.podFailurePolicy.rules[1].onPodConditions[0].type
+          value: DisruptionTarget
+      # Short grace period so a drain is never blocked
+      - equal:
+          path: spec.template.spec.terminationGracePeriodSeconds
+          value: 60
+      # SIGTERM trap exits 143 (nonzero) so the Job never completes on cancel
+      - matchRegex:
+          path: spec.template.spec.containers[0].command[2]
+          pattern: trap '.*exit 143' TERM
+
+  - it: Bootstrap job ignores drain evictions and exit 143
+    template: templates/agof-config-bootstrap-job.yaml
+    asserts:
+      - equal:
+          path: spec.podFailurePolicy.rules[0].action
+          value: Ignore
+      - equal:
+          path: spec.podFailurePolicy.rules[0].onExitCodes.operator
+          value: In
+      - equal:
+          path: spec.podFailurePolicy.rules[0].onExitCodes.values
+          value: [143]
+      - equal:
+          path: spec.podFailurePolicy.rules[1].action
+          value: Ignore
+      - equal:
+          path: spec.podFailurePolicy.rules[1].onPodConditions[0].type
+          value: DisruptionTarget
+      - equal:
+          path: spec.template.spec.terminationGracePeriodSeconds
+          value: 60
+
+  - it: Config cronjob ignores drain evictions and exit 143
+    template: templates/agof-config-cronjob.yaml
+    asserts:
+      - equal:
+          path: spec.jobTemplate.spec.podFailurePolicy.rules[0].action
+          value: Ignore
+      - equal:
+          path: spec.jobTemplate.spec.podFailurePolicy.rules[0].onExitCodes.operator
+          value: In
+      - equal:
+          path: spec.jobTemplate.spec.podFailurePolicy.rules[0].onExitCodes.values
+          value: [143]
+      - equal:
+          path: spec.jobTemplate.spec.podFailurePolicy.rules[1].action
+          value: Ignore
+      - equal:
+          path: spec.jobTemplate.spec.podFailurePolicy.rules[1].onPodConditions[0].type
+          value: DisruptionTarget
+      - equal:
+          path: spec.jobTemplate.spec.template.spec.terminationGracePeriodSeconds
+          value: 60
+
+  - it: Does not render the validation job when disabled
+    template: templates/external-secrets-validation-job.yaml
+    set:
+      validationJob:
+        disabled: true
+    asserts:
+      - hasDocuments:
+          count: 0

@@ -35,6 +35,9 @@
 {{- define "aap-config.app.configjobspec" -}}
 restartPolicy: Never
 serviceAccountName: {{ $.Values.serviceAccountName }}
+# SIGTERM'd containers exit promptly; keep the grace period short so a node
+# drain is never blocked waiting for this pod.
+terminationGracePeriodSeconds: 60
 volumes:
   - name: agof-scratch-space
     emptyDir:

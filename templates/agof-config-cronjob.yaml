@@ -12,6 +12,19 @@ spec:
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:
+      # A drain-evicted (cancelled) pod is ignored rather than counted as a
+      # failure; only genuine failures count toward backoffLimit.
+      # No containerName: both the agof-init (bash) and agof-config
+      # (timeout-wrapped make) containers exit 143 on SIGTERM.
+      podFailurePolicy:
+        rules:
+          - action: Ignore
+            onExitCodes:
+              operator: In
+              values: [143]
+          - action: Ignore
+            onPodConditions:
+              - type: DisruptionTarget
       template:
         spec:
           activeDeadlineSeconds: {{ $.Values.configJob.activeDeadlineSeconds }}

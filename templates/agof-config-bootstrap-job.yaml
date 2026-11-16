@@ -7,6 +7,20 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "3"
 spec:
+  # A drain-evicted (cancelled) pod is ignored rather than counted as a
+  # failure: the Job stays incomplete and a replacement pod retries the
+  # configuration. Only genuine failures count toward backoffLimit.
+  # No containerName: both the agof-init (bash) and agof-config
+  # (timeout-wrapped make) containers exit 143 on SIGTERM.
+  podFailurePolicy:
+    rules:
+      - action: Ignore
+        onExitCodes:
+          operator: In
+          values: [143]
+      - action: Ignore
+        onPodConditions:
+          - type: DisruptionTarget
   parallelism: 1
   completions: 1
   backoffLimit: 99
