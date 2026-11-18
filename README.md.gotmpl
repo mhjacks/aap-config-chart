@@ -66,6 +66,9 @@ pod does not burn `backoffLimit` and a replacement pod resumes the work, and
 `terminationGracePeriodSeconds` is set to 60 so a node drain is never blocked
 waiting for a job pod.
 
+* v0.2.9: Add `status: True` because Job in OCP <= 4.20 requires it. It became
+optional subsequently but is still compatible with OCP 4.22+ and 5.0+.
+
 ### Git authentication secret (`agof.gitAuthSecret`)
 
 When `agof_repo` or the config-as-code repo (`agof.cac_repo` / `agof.iac_repo`) is

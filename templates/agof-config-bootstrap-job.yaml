@@ -21,6 +21,7 @@ spec:
       - action: Ignore
         onPodConditions:
           - type: DisruptionTarget
+            status: "True"
   parallelism: 1
   completions: 1
   backoffLimit: 99

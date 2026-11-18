@@ -25,6 +25,7 @@ spec:
           - action: Ignore
             onPodConditions:
               - type: DisruptionTarget
+                status: "True"
       template:
         spec:
           activeDeadlineSeconds: {{ $.Values.configJob.activeDeadlineSeconds }}

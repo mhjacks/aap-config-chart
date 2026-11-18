@@ -1,6 +1,6 @@
 # aap-config
 
-![Version: 0.2.8](https://img.shields.io/badge/Version-0.2.8-informational?style=flat-square)
+![Version: 0.2.9](https://img.shields.io/badge/Version-0.2.9-informational?style=flat-square)
 
 A Helm chart to build and deploy secrets using external-secrets for ansible-edge-gitops
 
@@ -64,6 +64,9 @@ DisruptionTarget drain evictions and exit code 143 (SIGTERM), so an evicted
 pod does not burn `backoffLimit` and a replacement pod resumes the work, and
 `terminationGracePeriodSeconds` is set to 60 so a node drain is never blocked
 waiting for a job pod.
+
+* v0.2.9: Add `status: True` because Job in OCP <= 4.20 requires it. It became
+optional subsequently but is still compatible with OCP 4.22+ and 5.0+.
 
 ### Git authentication secret (`agof.gitAuthSecret`)
 

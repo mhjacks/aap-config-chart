@@ -28,6 +28,9 @@ tests:
       - equal:
           path: spec.podFailurePolicy.rules[1].onPodConditions[0].type
           value: DisruptionTarget
+      - equal:
+          path: spec.podFailurePolicy.rules[1].onPodConditions[0].status
+          value: "True"
       # Short grace period so a drain is never blocked
       - equal:
           path: spec.template.spec.terminationGracePeriodSeconds
@@ -56,6 +59,9 @@ tests:
           path: spec.podFailurePolicy.rules[1].onPodConditions[0].type
           value: DisruptionTarget
       - equal:
+          path: spec.podFailurePolicy.rules[1].onPodConditions[0].status
+          value: "True"
+      - equal:
           path: spec.template.spec.terminationGracePeriodSeconds
           value: 60
 
@@ -77,6 +83,9 @@ tests:
       - equal:
           path: spec.jobTemplate.spec.podFailurePolicy.rules[1].onPodConditions[0].type
           value: DisruptionTarget
+      - equal:
+          path: spec.jobTemplate.spec.podFailurePolicy.rules[1].onPodConditions[0].status
+          value: "True"
       - equal:
           path: spec.jobTemplate.spec.template.spec.terminationGracePeriodSeconds
           value: 60
