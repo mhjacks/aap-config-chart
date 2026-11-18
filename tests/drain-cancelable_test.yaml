@@ -10,25 +10,31 @@ tests:
     template: templates/external-secrets-validation-job.yaml
     asserts:
       # Drain evictions are ignored, not counted as failures
-      - equal:
+      - &pod-failure-action
+        equal:
           path: spec.podFailurePolicy.rules[0].action
           value: Ignore
       - equal:
           path: spec.podFailurePolicy.rules[0].onExitCodes.containerName
           value: secrets-validator
-      - equal:
+      - &exit-codes-operator
+        equal:
           path: spec.podFailurePolicy.rules[0].onExitCodes.operator
           value: In
-      - equal:
+      - &exit-codes-values
+        equal:
           path: spec.podFailurePolicy.rules[0].onExitCodes.values
           value: [143]
-      - equal:
+      - &disruption-action
+        equal:
           path: spec.podFailurePolicy.rules[1].action
           value: Ignore
-      - equal:
+      - &disruption-type
+        equal:
           path: spec.podFailurePolicy.rules[1].onPodConditions[0].type
           value: DisruptionTarget
-      - equal:
+      - &disruption-status
+        equal:
           path: spec.podFailurePolicy.rules[1].onPodConditions[0].status
           value: "True"
       # Short grace period so a drain is never blocked
@@ -43,24 +49,12 @@ tests:
   - it: Bootstrap job ignores drain evictions and exit 143
     template: templates/agof-config-bootstrap-job.yaml
     asserts:
-      - equal:
-          path: spec.podFailurePolicy.rules[0].action
-          value: Ignore
-      - equal:
-          path: spec.podFailurePolicy.rules[0].onExitCodes.operator
-          value: In
-      - equal:
-          path: spec.podFailurePolicy.rules[0].onExitCodes.values
-          value: [143]
-      - equal:
-          path: spec.podFailurePolicy.rules[1].action
-          value: Ignore
-      - equal:
-          path: spec.podFailurePolicy.rules[1].onPodConditions[0].type
-          value: DisruptionTarget
-      - equal:
-          path: spec.podFailurePolicy.rules[1].onPodConditions[0].status
-          value: "True"
+      - *pod-failure-action
+      - *exit-codes-operator
+      - *exit-codes-values
+      - *disruption-action
+      - *disruption-type
+      - *disruption-status
       - equal:
           path: spec.template.spec.terminationGracePeriodSeconds
           value: 60
